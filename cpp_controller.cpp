@@ -63,15 +63,13 @@ int main(int argc, char **argv)
       // brake_controller = true;
       //   i ++;
 
-      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 2000, 250, -90, 500, 1000))
+      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 1500, 1000, -45, 100, 240, 420))
         brake_controller = true;
 
       vel_ref = get_vel_ref();
       ang_vel_ref = get_ang_vel_ref();
 
       // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
-      // std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << std::endl;
-      // std::cout << "phi  =  " << robot_obj.get_phi() << std::endl;
     }
 
     robot_obj.is_moving(VEL_LIMIT, ANG_VEL_LIMIT);
@@ -84,9 +82,13 @@ int main(int argc, char **argv)
 
     if (i >= sizeof(targets) / sizeof(target) || brake_controller)
     {
-      std::cout << "time = " << my_robot->getTime() << std::endl;
       left_motor->setVelocity(0);
       right_motor->setVelocity(0);
+      std::cout << " "<< std::endl;
+      std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << std::endl;
+      std::cout << "phi  =  " << robot_obj.get_phi() << std::endl;
+      std::cout << " "<< std::endl;
+      std::cout << "time = " << my_robot->getTime() << std::endl;
       break;
     }
   };
