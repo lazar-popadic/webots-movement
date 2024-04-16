@@ -21,8 +21,8 @@ target targets[4] = {{750, 250, 90}, {750, 750, 180}, {250, 750, -90}, {250, 250
 int8_t i = 0;
 bool brake_controller = false;
 
-PID vel_loop(1.0, 1.0, 0.1, 12);
-PID ang_vel_loop(0.1, 0.1, 0.0042, 16);
+PID vel_loop(1.0, 1.0, 0.1, 6);
+PID ang_vel_loop(0.1, 0.1, 0.0042, 6);
 
 int main(int argc, char **argv)
 {
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   right_passive->enable(1);
   left_passive->enable(1);
 
-  MyRobot robot_obj(500.0, 500.0, 0.0);
+  MyRobot robot_obj(-1250.0, -750.0, 0.0);
 
   while (my_robot->step(1) != -1)
   {
@@ -59,11 +59,11 @@ int main(int argc, char **argv)
     {
       counter = 1;
       set_reg_type(1);
-      // if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 2000, 1000, 0, robot_obj.get_not_moving()))
+      // if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1000.0, 500.0, 150, robot_obj.get_not_moving()))
       // brake_controller = true;
       //   i ++;
 
-      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 1500, 1000, -45, 100, 240, 420))
+      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1000.0, -500.0, 90.0, 250.0, 50.0, 450.0))
         brake_controller = true;
 
       vel_ref = get_vel_ref();

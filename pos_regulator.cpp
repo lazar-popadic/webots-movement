@@ -1,7 +1,7 @@
 #include "main.hpp"
 
 #define DISTANCE_LIMIT 10
-#define DISTANCE_LIMIT2 20
+#define DISTANCE_LIMIT2 33
 #define PHI_LIMIT 1
 #define PHI_PRIM_LIMIT 2
 
@@ -30,8 +30,12 @@ bool done = true;
 int8_t reg_type = 0;
 int8_t phase = 0;
 
-PID distance_loop(0.16, 0.052, 0.0, 6); //.......... 10
-PID angle_loop(2.4, 0.72, 0.0, 72);     // 2.5, 0.75, .....
+PID distance_loop(0.16, 0.052, 0.0, 10);
+PID angle_loop(2.5, 0.75, 0.0, 72);
+
+PID bezier_distance_loop(0.16, 0.052, 0.0, 10);
+PID bezier_angle_loop(2.0, 0.02, 0.08, 72);
+double bezier_distance = 0;
 
 static void normalize_error_phi();
 static void normalize_error_phi_prim();
@@ -87,13 +91,14 @@ bool follow_bezier(double robot_x, double robot_y, double robot_phi, double desi
         p3.x = desired_x - offs_d1 * cos(desired_phi / 180 * M_PI);
         p3.y = desired_y - offs_d1 * sin(desired_phi / 180 * M_PI);
 
-        cubic_bezier(bezier_coords, p0, p1, p2, p3);
+        bezier_distance = cubic_bezier(bezier_coords, p0, p1, p2, p3);
         phase = 1;
-        std::cout << "p0 x  =  " << p0.x << "                 p0 y  =  " << p0.y << std::endl;
-        std::cout << "p1 x  =  " << p1.x << "                 p1 y  =  " << p1.y << std::endl;
-        std::cout << "p2 x  =  " << p2.x << "                 p2 y  =  " << p2.y << std::endl;
-        std::cout << "p3 x  =  " << p3.x << "                 p3 y  =  " << p3.y << std::endl;
-        std::cout << "p4 x  =  " << p4.x << "                 p4 y  =  " << p4.y << std::endl;
+        std::cout << "bezier_distance  =  " << bezier_distance << std::endl;
+        // std::cout << "p0 x  =  " << p0.x << "                  y  =  " << p0.y << std::endl;
+        // std::cout << "p1 x  =  " << p1.x << "                  y  =  " << p1.y << std::endl;
+        // std::cout << "p2 x  =  " << p2.x << "                  y  =  " << p2.y << std::endl;
+        // std::cout << "p3 x  =  " << p3.x << "                  y  =  " << p3.y << std::endl;
+        // std::cout << "p4 x  =  " << p4.x << "                  y  =  " << p4.y << std::endl;
         break;
 
     case 1: // follow
@@ -111,10 +116,13 @@ bool follow_bezier(double robot_x, double robot_y, double robot_phi, double desi
         // if (fabs(error_phi_prim) > 90)
         //     vel_ref = -distance_loop.calculate_zero(distance);
         // else
-        vel_ref = distance_loop.calculate_zero(distance);
+            vel_ref = bezier_distance_loop.calculate_zero(distance);
+        ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
+        
 
-        ang_vel_ref = angle_loop.calculate_zero(error_phi_prim);
-
+        // if (fabs(ang_vel_ref > 20))
+            // vel_ref *= (1 - (fabs(ang_vel_ref) / 72) * 0.8);   // budz resenje, problem sa brzim okretanjem jer mu vel_ref ne dozvoljava
+        
         if (cur_dis_error < 100) // error_phi_prim < 10 &&
         {
             bezier_counter++;
@@ -152,7 +160,7 @@ bool follow_bezier(double robot_x, double robot_y, double robot_phi, double desi
         else
             ang_vel_ref = 0;
 
-        if (error_phi_prim < PHI_PRIM_LIMIT && distance < DISTANCE_LIMIT) // && cur_dis_error < BEZIER_RESOLUTION / bezier_counter * 20
+        if (distance < DISTANCE_LIMIT) // && cur_dis_error < BEZIER_RESOLUTION / bezier_counter * 20
         {
             done = true;
             phase = 0;
