@@ -63,7 +63,7 @@ int main(int argc, char **argv)
       //   brake_controller = true;
       // i ++;
 
-      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1250.0, -250.0, 180.0, 200.0, 60.0, 600.0))
+      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -750.0, -750.0, -90.0, 200.0, 60.0, 600.0))
         brake_controller = true;
 
       // vel_ref = get_vel_ref();

@@ -50,9 +50,9 @@ static void normalize_error_phi();
 static void normalize_error_phi_prim();
 static void rotate(bool not_moving);
 static void go_to_xy(bool not_moving);
-static void normalize_angle(double* angle);
+static void normalize_angle(double *angle);
 
-static void normalize_angle(double* angle)
+static void normalize_angle(double *angle)
 {
     if (*angle > 180.0)
         *angle -= 360.0;
@@ -105,12 +105,10 @@ bool follow_bezier(double robot_x, double robot_y, double robot_phi, double desi
         break;
 
     case 1: // follow
-        // error_x = desired_x - robot_x;
-        // error_y = desired_y - robot_y;
         cur_error.x = bezier_coords_low_res[bezier_counter].x - robot_x;
         cur_error.y = bezier_coords_low_res[bezier_counter].y - robot_y;
-        next_error.x = bezier_coords_low_res[bezier_counter+1].x - robot_x;
-        next_error.y = bezier_coords_low_res[bezier_counter+1].y - robot_y;
+        next_error.x = bezier_coords_low_res[bezier_counter + 1].x - robot_x;
+        next_error.y = bezier_coords_low_res[bezier_counter + 1].y - robot_y;
 
         error_phi_prim_1 = atan2(cur_error.y, cur_error.x) * 180 / M_PI - robot_phi;
         error_phi_prim_2 = atan2(next_error.y, next_error.x) * 180 / M_PI - robot_phi;
@@ -119,50 +117,25 @@ bool follow_bezier(double robot_x, double robot_y, double robot_phi, double desi
 
         distance = bezier_distance - bezier_counter * POINT_DISTANCE;
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
-        next_dis_error = sqrt(next_error.x * next_error.x + next_error.y * next_error.y);
-        
-        cur_dis_error *= cos(error_phi_prim_1 * M_PI / 180);
-        saturation(&cur_dis_error, HUGE_VAL, 0);
 
-        // if (fabs(error_phi_prim_1) > 90)
-        //     t = 0;
-        // else
-            t = cur_dis_error / POINT_DISTANCE;
+        cur_dis_error *= cos(error_phi_prim_1 * M_PI / 180);
+        t = cur_dis_error / POINT_DISTANCE;
         saturation(&t, 1, 0);
-        // if (next_dis_error < 180)
-        //     t = 0;
-        // else
-            // t = 1;
-        // std::cout << cur_dis_error << "                " << t << std::endl;
 
         error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
         normalize_error_phi_prim();
-
-        // if (fabs(error_phi_prim) > 90)
-        //     vel_ref = -distance_loop.calculate_zero(distance);
-        // else
-            vel_ref = bezier_distance_loop.calculate_zero(distance);
+        vel_ref = bezier_distance_loop.calculate_zero(distance);
         ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
-        
 
-        // if (fabs(ang_vel_ref > 20))
-            // vel_ref *= (1 - (fabs(ang_vel_ref) / 72) * 0.8);   // budz resenje, problem sa brzim okretanjem jer mu vel_ref ne dozvoljava
-        
-        if (cur_dis_error == 0) // && next_dis_error < 1.5 * POINT_DISTANCE ,  kada predje trenutnu tacku: fabs(error_phi_prim_1) > 90
+        if (cur_dis_error < 0)
         {
-            // std::cout << "distance  =  " << distance << std::endl;
             bezier_counter++;
-                std::cout << "     x  =  " << robot_obj.get_x() << "                      y  =  " << robot_obj.get_y() << std::endl;
+            std::cout << "     x  =  " << robot_obj.get_x() << "                      y  =  " << robot_obj.get_y() << std::endl;
             if (bezier_counter == bezier_total - 1)
             {
                 phase = 2;
                 // done = true;
                 bezier_counter = 0;
-                std::cout << "final x  =  " << p4.x << "                 final y  =  " << p4.y << std::endl;
-            }
-            else
-            {
-                std::cout << "next x  =  " << bezier_coords_low_res[bezier_counter].x << "                 next y  =  " << bezier_coords_low_res[bezier_counter].y << std::endl;
             }
         }
         break;
@@ -176,21 +149,17 @@ bool follow_bezier(double robot_x, double robot_y, double robot_phi, double desi
 
         distance = sqrt(error_x * error_x + error_y * error_y);
         distance *= cos(error_phi_prim * M_PI / 180);
-        // std::cout << "distance  =  " << distance << std::endl;
-        // if (fabs(error_phi_prim) > 90)
-        //     vel_ref = -distance_loop.calculate_zero(distance);
-        // else
-            vel_ref = distance_loop.calculate_zero(distance);
+        vel_ref = distance_loop.calculate_zero(distance);
 
         if (fabs(distance) > DISTANCE_LIMIT2)
         {
             ang_vel_ref = angle_loop.calculate_zero(error_phi_prim);
-            ang_vel_ref*=0.25;
+            ang_vel_ref *= 0.2;
         }
         else
             ang_vel_ref = 0;
 
-        if (distance < 0) // distance < DISTANCE_LIMIT 
+        if (distance < 0)
         {
             done = true;
             phase = 0;
@@ -283,7 +252,7 @@ double get_ang_vel_ref()
     return ang_vel_ref;
 }
 
-void acc_ramp(double* signal, double reference, double acc)
+void acc_ramp(double *signal, double reference, double acc)
 {
     if (fabs(reference) - fabs(*signal) > acc)
         *signal += acc;
@@ -291,7 +260,7 @@ void acc_ramp(double* signal, double reference, double acc)
         *signal = reference;
 }
 
-void saturation (double* signal, double max, double min)
+void saturation(double *signal, double max, double min)
 {
     if (*signal > max)
         *signal = max;
