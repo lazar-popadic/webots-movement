@@ -13,7 +13,7 @@
 bool init = false;
 double vel_control = 0;
 double ang_vel_control = 0;
-int8_t position_prescaler = 10;
+int8_t position_prescaler = 4;
 int8_t counter = 1;
 double vel_ref = 0;
 double ang_vel_ref = 0;
@@ -23,6 +23,8 @@ bool brake_controller = false;
 
 PID vel_loop(1.0, 1.0, 0.1, 6);
 PID ang_vel_loop(0.1, 0.1, 0.0042, 6);
+
+MyRobot robot_obj(-1250.0, -750.0, 0.0);
 
 int main(int argc, char **argv)
 {
@@ -43,8 +45,6 @@ int main(int argc, char **argv)
   right_passive->enable(1);
   left_passive->enable(1);
 
-  MyRobot robot_obj(-1250.0, -750.0, 0.0);
-
   while (my_robot->step(1) != -1)
   {
     if (!init)
@@ -58,16 +58,18 @@ int main(int argc, char **argv)
     if (!(counter % position_prescaler))
     {
       counter = 1;
-      set_reg_type(1);
-      // if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1000.0, 500.0, 150, robot_obj.get_not_moving()))
-      // brake_controller = true;
-      //   i ++;
+      // set_reg_type(1);
+      // if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1250.0, -250.0, 0.0, robot_obj.get_not_moving()))
+      //   brake_controller = true;
+      // i ++;
 
-      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1000.0, -500.0, 90.0, 250.0, 50.0, 450.0))
+      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1250.0, -250.0, 180.0, 200.0, 60.0, 600.0))
         brake_controller = true;
 
-      vel_ref = get_vel_ref();
+      // vel_ref = get_vel_ref();
       ang_vel_ref = get_ang_vel_ref();
+      acc_ramp(&vel_ref, get_vel_ref(), 2.0);
+      // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 36.0);
 
       // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
     }
@@ -76,6 +78,8 @@ int main(int argc, char **argv)
 
     ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
     vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
+    // acc_ramp(&ang_vel_control, ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel()), 0.4);
+    // acc_ramp(&vel_control, vel_loop.calculate(vel_ref, robot_obj.get_vel()), 0.4);
 
     right_motor->setVelocity(vel_control + ang_vel_control);
     left_motor->setVelocity(vel_control - ang_vel_control);
@@ -84,10 +88,10 @@ int main(int argc, char **argv)
     {
       left_motor->setVelocity(0);
       right_motor->setVelocity(0);
-      std::cout << " "<< std::endl;
+      std::cout << " " << std::endl;
       std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << std::endl;
       std::cout << "phi  =  " << robot_obj.get_phi() << std::endl;
-      std::cout << " "<< std::endl;
+      std::cout << " " << std::endl;
       std::cout << "time = " << my_robot->getTime() << std::endl;
       break;
     }
