@@ -19,19 +19,16 @@ double vel_ref = 0;
 double ang_vel_ref = 0;
 target targets[4] = {{750, 250, 90}, {750, 750, 180}, {250, 750, -90}, {250, 250, 0}};
 int8_t i = 0;
-bool brake_controller = false;
+bool break_controller = false;
 
 PID vel_loop(1.0, 1.0, 0.1, 6);
-PID ang_vel_loop(0.1, 0.1, 0.0042, 6);
+PID ang_vel_loop(0.1, 0.1, 0.0042, 12);
 
 MyRobot robot_obj(-1250.0, -750.0, 0.0);
 
 int main(int argc, char **argv)
 {
   webots::Robot *my_robot = new webots::Robot();
-
-  // get the time step of the current world.
-  // int timeStep = (int)my_robot->getBasicTimeStep();
 
   Motor *left_motor = my_robot->getMotor("left wheel motor");
   Motor *right_motor = my_robot->getMotor("right wheel motor");
@@ -60,16 +57,16 @@ int main(int argc, char **argv)
       counter = 1;
       // set_reg_type(1);
       // if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1250.0, -250.0, 0.0, robot_obj.get_not_moving()))
-      //   brake_controller = true;
+      //   break_controller = true;
       // i ++;
 
-      if (follow_bezier(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -750.0, -750.0, -90.0, 200.0, 60.0, 600.0))
-        brake_controller = true;
+      if (follow_curve(robot_obj.get_position(), 0.0, 0.0, -90.0))
+        break_controller = true;
 
       // vel_ref = get_vel_ref();
       ang_vel_ref = get_ang_vel_ref();
       acc_ramp(&vel_ref, get_vel_ref(), 2.0);
-      // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 36.0);
+      // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 24.0);
 
       // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
     }
@@ -78,20 +75,16 @@ int main(int argc, char **argv)
 
     ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
     vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
-    // acc_ramp(&ang_vel_control, ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel()), 0.4);
-    // acc_ramp(&vel_control, vel_loop.calculate(vel_ref, robot_obj.get_vel()), 0.4);
 
     right_motor->setVelocity(vel_control + ang_vel_control);
     left_motor->setVelocity(vel_control - ang_vel_control);
 
-    if (i >= sizeof(targets) / sizeof(target) || brake_controller)
+    if (break_controller) // i >= sizeof(targets) / sizeof(target) || 
     {
       left_motor->setVelocity(0);
       right_motor->setVelocity(0);
       std::cout << " " << std::endl;
-      std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << std::endl;
-      std::cout << "phi  =  " << robot_obj.get_phi() << std::endl;
-      std::cout << " " << std::endl;
+      std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
       std::cout << "time = " << my_robot->getTime() << std::endl;
       break;
     }

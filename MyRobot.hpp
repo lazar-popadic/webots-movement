@@ -3,12 +3,20 @@
 #ifndef __MYROBOT_HPP
 #define __MYROBOT_HPP
 
+typedef struct
+{
+    double x;
+    double y;
+    double phi;
+}target;
+
 class MyRobot
 {
   private:
-    double x_base;
-    double y_base;
-    double phi_base;    //degrees
+    // double x_base;
+    // double y_base;
+    // double phi_base;    //degrees
+    target position;
 
     double cur_right_encoder = 0;
     double cur_left_encoder = 0;
@@ -30,9 +38,9 @@ class MyRobot
   public:
     MyRobot(double x_init, double y_init, double phi_init)
     {
-        x_base = x_init;
-        y_base = y_init;
-        phi_base = phi_init;
+        position.x = x_init;
+        position.y = y_init;
+        position.phi = phi_init;
     }
 
     void set_prev(double prev_right, double prev_left)
@@ -56,34 +64,39 @@ class MyRobot
         base_vel = (vel_r + vel_l) * 0.5;
         base_ang_vel = (vel_r - vel_l) / wheel_dis;
 
-        x_base += base_vel * cos(phi_base/180*M_PI + base_ang_vel * 0.5);
-        y_base += base_vel * sin(phi_base/180*M_PI + base_ang_vel * 0.5);
-        phi_base += base_ang_vel * 180/M_PI;
+        position.x += base_vel * cos(position.phi/180*M_PI + base_ang_vel * 0.5);
+        position.y += base_vel * sin(position.phi/180*M_PI + base_ang_vel * 0.5);
+        position.phi += base_ang_vel * 180/M_PI;
         normalize_phi();
         // phi_base = normalize_angle(phi_base);
     }
 
     double get_phi()
     {
-        return phi_base;
+        return position.phi;
     }
 
     void normalize_phi()
     {
-    if (phi_base > 180.0)
-        phi_base -= 360.0;
-    else if (phi_base < -180.0)
-        phi_base += 360.0;
+    if (position.phi > 180.0)
+        position.phi -= 360.0;
+    else if (position.phi < -180.0)
+        position.phi += 360.0;
+    }
+
+    target get_position()
+    {
+        return position;
     }
 
     double get_x()
     {
-        return x_base;
+        return position.x;
     }
 
     double get_y()
     {
-        return y_base;
+        return position.y;
     }
 
     double get_vel()
