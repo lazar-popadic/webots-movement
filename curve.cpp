@@ -6,29 +6,42 @@ static coord p2;
 static coord p3;
 static coord p4;
 
-void create_curve(curve *bezier, target robot_position, double desired_x, double desired_y, double desired_phi)
+void create_curve_2(curve *bezier, target robot_position, target targets[], int number_of_targets)
 {
-    normalize_angle(&desired_phi);
+    curve temp_curve[number_of_targets];
+    create_curve(bezier, robot_position, targets[0]);
+    for (int i = 1; i < number_of_targets ; i++)
+    {
+        create_curve (&temp_curve[i], targets[i - 1], targets[i]);
+        add_to_curve(bezier, temp_curve[i]);
+        // curve *temp_curve = (curve*)malloc(sizeof(target));
+        // free(&temp_curve);
+    }
+}
+
+void create_curve(curve *bezier, target robot_position, target desired_position)
+{
+    normalize_angle(&desired_position.phi);
     p0.x = robot_position.x;
     p0.y = robot_position.y;
 
-    p4.x = desired_x;
-    p4.y = desired_y;
+    p4.x = desired_position.x;
+    p4.y = desired_position.y;
 
     p1.x = robot_position.x + OFFS_ROBOT * cos(robot_position.phi / 180 * M_PI);
     p1.y = robot_position.y + OFFS_ROBOT * sin(robot_position.phi / 180 * M_PI);
 
-    p2.x = desired_x - (OFFS_DESIRED + OFFS_DESIRED_TRAN) * cos(desired_phi / 180 * M_PI);
-    p2.y = desired_y - (OFFS_DESIRED + OFFS_DESIRED_TRAN) * sin(desired_phi / 180 * M_PI);
+    p2.x = desired_position.x - (OFFS_DESIRED + OFFS_DESIRED_TRAN) * cos(desired_position.phi / 180 * M_PI);
+    p2.y = desired_position.y - (OFFS_DESIRED + OFFS_DESIRED_TRAN) * sin(desired_position.phi / 180 * M_PI);
 
-    p3.x = desired_x - OFFS_DESIRED_TRAN * cos(desired_phi / 180 * M_PI);
-    p3.y = desired_y - OFFS_DESIRED_TRAN * sin(desired_phi / 180 * M_PI);
+    p3.x = desired_position.x - OFFS_DESIRED_TRAN * cos(desired_position.phi / 180 * M_PI);
+    p3.y = desired_position.y - OFFS_DESIRED_TRAN * sin(desired_position.phi / 180 * M_PI);
 
     cubic_bezier_curve(bezier, p0, p1, p2, p3);
 
-    bezier->end_target.x = desired_x;
-    bezier->end_target.y = desired_y;
-    bezier->end_target.phi = desired_phi;
+    bezier->end_target.x = desired_position.x;
+    bezier->end_target.y = desired_position.y;
+    bezier->end_target.phi = desired_position.phi;
 }
 
 void cubic_bezier_curve(curve *bezier, coord p0, coord p1, coord p2, coord p3)

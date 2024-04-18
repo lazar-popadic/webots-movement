@@ -143,6 +143,8 @@ bool follow_curve_2(curve bezier, target robot_position)
 
         if (distance < 0)
         {
+            vel_ref = 0;
+            ang_vel_ref = 0;
             done = true;
             phase = 0;
 
@@ -287,6 +289,8 @@ static void rotate(bool not_moving)
     ang_vel_ref = angle_loop.calculate_zero(error_phi);
     if (fabs(error_phi) < PHI_LIMIT && not_moving)
     {
+        vel_ref = 0;
+        ang_vel_ref = 0;
         reg_type = 0;
         done = true;
     }
@@ -317,6 +321,8 @@ static void go_to_xy(bool not_moving)
             ang_vel_ref = 0;
         if (fabs(distance) < DISTANCE_LIMIT && not_moving)
         {
+            vel_ref = 0;
+            ang_vel_ref = 0;
             phase = 0;
             reg_type = 0;
             done = true;

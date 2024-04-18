@@ -17,18 +17,16 @@ int8_t position_prescaler = 4;
 int8_t counter = 1;
 double vel_ref = 0;
 double ang_vel_ref = 0;
-target targets[4] = {{750, 250, 90}, {750, 750, 180}, {250, 750, -90}, {250, 250, 0}};
-int8_t i = 0;
 bool break_controller = false;
-curve curve_to_follow;
-curve curve_to_add_1;
-curve curve_to_add_2;
-curve curve_to_add_3;
+curve *curve_to_follow;
+target targets[3] = {{-666, 1000, 180}, {-1000, 330, -90}, {-260, -750, -90}};
 
 PID vel_loop(1.0, 1.0, 0.1, 6);
 PID ang_vel_loop(0.1, 0.1, 0.0042, 12);
 
-MyRobot robot_obj(-1250.0, -750.0, 0.0);
+MyRobot robot_obj(0.0, 0.0, 0.0);
+
+static int phase = 0;
 
 int main(int argc, char **argv)
 {
@@ -46,14 +44,6 @@ int main(int argc, char **argv)
   right_passive->enable(1);
   left_passive->enable(1);
 
-  create_curve(&curve_to_follow, robot_obj.get_position(), 0.0, 0.0, 0.0);
-  create_curve(&curve_to_add_1, create_target(0, 0, 0), 0, -750, 180);
-  create_curve(&curve_to_add_2, create_target(0, -750, 180), -750, -750, 180);
-  create_curve(&curve_to_add_3, create_target(-750, -750, 180), 0, 0, 0);
-  add_to_curve(&curve_to_follow, curve_to_add_1);
-  add_to_curve(&curve_to_follow, curve_to_add_2);
-  add_to_curve(&curve_to_follow, curve_to_add_3);
-
   while (my_robot->step(1) != -1)
   {
     if (!init)
@@ -67,16 +57,27 @@ int main(int argc, char **argv)
     if (!(counter % position_prescaler))
     {
       counter = 1;
-      // set_reg_type(1);
-      // if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), -1250.0, -250.0, 0.0, robot_obj.get_not_moving()))
+      switch (phase)
+      {
+      case 0:
+        curve_to_follow = (curve *)malloc(sizeof(curve));
+        create_curve_2(curve_to_follow, robot_obj.get_position(), targets, 3);
+        phase++;
+        break;
+
+      case 1:
+        if (follow_curve_2(*curve_to_follow, robot_obj.get_position()))
+        {
+          free(curve_to_follow);
+          break_controller = true;
+        }
+        break;
+      }
+      // if (follow_curve_2(curve_to_follow, robot_obj.get_position()))
       //   break_controller = true;
-      // i ++;
-      
-      if (follow_curve_2(curve_to_follow, robot_obj.get_position()))
-        break_controller = true;
 
       // if (follow_curve(robot_obj.get_position(), 0.0, 0.0, 0.0))
-        // break_controller = true;
+      // break_controller = true;
 
       // vel_ref = get_vel_ref();
       ang_vel_ref = get_ang_vel_ref();
@@ -94,7 +95,7 @@ int main(int argc, char **argv)
     right_motor->setVelocity(vel_control + ang_vel_control);
     left_motor->setVelocity(vel_control - ang_vel_control);
 
-    if (break_controller) // i >= sizeof(targets) / sizeof(target) || 
+    if (break_controller) // i >= sizeof(targets) / sizeof(target) ||
     {
       left_motor->setVelocity(0);
       right_motor->setVelocity(0);

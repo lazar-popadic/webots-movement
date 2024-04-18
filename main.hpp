@@ -46,11 +46,11 @@ void acc_ramp(double* signal, double reference, double acc);
 void saturation (double* signal, double max, double min);
 void normalize_angle(double *angle);
 
-void create_curve(curve *bezier, target robot_position, double desired_x, double desired_y, double desired_phi);
+void create_curve(curve *bezier, target robot_position, target desired_position);
 void cubic_bezier_curve (curve* bezier, coord p0, coord p1, coord p2, coord p3);
 bool follow_curve (target robot_position, double desired_x, double desired_y, double desired_phi);
 void add_to_curve(curve *bezier, curve added_curve);
 bool follow_curve_2(curve bezier, target robot_position);
 target create_target(double x, double y, double phi);
-
+void create_curve_2(curve *bezier, target robot_position, target targets[], int number_of_targets);
 #endif /* __MAIN_HPP */
