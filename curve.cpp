@@ -1,18 +1,12 @@
 #include "main.hpp"
 
-static coord p0;
-static coord p1;
-static coord p2;
-static coord p3;
-static coord p4;
-
-void create_curve_2(curve *bezier, target robot_position, target targets[], int number_of_targets)
+void create_curve_multi(curve *bezier, target robot_position, target targets[], int number_of_targets)
 {
     curve temp_curve[number_of_targets];
     create_curve(bezier, robot_position, targets[0]);
-    for (int i = 1; i < number_of_targets ; i++)
+    for (int i = 1; i < number_of_targets; i++)
     {
-        create_curve (&temp_curve[i], targets[i - 1], targets[i]);
+        create_curve(&temp_curve[i], targets[i - 1], targets[i]);
         add_to_curve(bezier, temp_curve[i]);
         // curve *temp_curve = (curve*)malloc(sizeof(target));
         // free(&temp_curve);
@@ -21,21 +15,23 @@ void create_curve_2(curve *bezier, target robot_position, target targets[], int 
 
 void create_curve(curve *bezier, target robot_position, target desired_position)
 {
+    static coord p0;
+    static coord p1;
+    static coord p2;
+    static coord p3;
+
     normalize_angle(&desired_position.phi);
     p0.x = robot_position.x;
     p0.y = robot_position.y;
 
-    p4.x = desired_position.x;
-    p4.y = desired_position.y;
-
     p1.x = robot_position.x + OFFS_ROBOT * cos(robot_position.phi / 180 * M_PI);
     p1.y = robot_position.y + OFFS_ROBOT * sin(robot_position.phi / 180 * M_PI);
 
-    p2.x = desired_position.x - (OFFS_DESIRED + OFFS_DESIRED_TRAN) * cos(desired_position.phi / 180 * M_PI);
-    p2.y = desired_position.y - (OFFS_DESIRED + OFFS_DESIRED_TRAN) * sin(desired_position.phi / 180 * M_PI);
+    p2.x = desired_position.x - OFFS_DESIRED * cos(desired_position.phi / 180 * M_PI);
+    p2.y = desired_position.y - OFFS_DESIRED * sin(desired_position.phi / 180 * M_PI);
 
-    p3.x = desired_position.x - OFFS_DESIRED_TRAN * cos(desired_position.phi / 180 * M_PI);
-    p3.y = desired_position.y - OFFS_DESIRED_TRAN * sin(desired_position.phi / 180 * M_PI);
+    p3.x = desired_position.x;
+    p3.y = desired_position.y;
 
     cubic_bezier_curve(bezier, p0, p1, p2, p3);
 
@@ -66,6 +62,7 @@ void cubic_bezier_curve(curve *bezier, coord p0, coord p1, coord p2, coord p3)
             }
         }
     }
+    std::cout << bezier->number_of_points << std::endl;
 }
 
 void add_to_curve(curve *bezier, curve added_curve)

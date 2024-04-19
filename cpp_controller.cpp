@@ -13,20 +13,22 @@
 bool init = false;
 double vel_control = 0;
 double ang_vel_control = 0;
+double ang_vel_right = 0;
+double ang_vel_left = 0;
 int8_t position_prescaler = 4;
 int8_t counter = 1;
 double vel_ref = 0;
 double ang_vel_ref = 0;
 bool break_controller = false;
 curve *curve_to_follow;
-target targets[3] = {{-666, 1000, 180}, {-1000, 330, -90}, {-260, -750, -90}};
+curve curve_2;
+target targets[3] = {{750, 0, -90}, {250, -750, 0}, {1000, 0, 90}}; // {750, 0, 0}, 
+static int phase = 0;
 
-PID vel_loop(1.0, 1.0, 0.1, 6);
-PID ang_vel_loop(0.1, 0.1, 0.0042, 12);
+PID vel_loop(1.0, 1.0, 0.1, 9);
+PID ang_vel_loop(0.1, 0.1, 0.0042, 9);
 
 MyRobot robot_obj(0.0, 0.0, 0.0);
-
-static int phase = 0;
 
 int main(int argc, char **argv)
 {
@@ -61,28 +63,52 @@ int main(int argc, char **argv)
       {
       case 0:
         curve_to_follow = (curve *)malloc(sizeof(curve));
-        create_curve_2(curve_to_follow, robot_obj.get_position(), targets, 3);
+        create_curve_multi(curve_to_follow, robot_obj.get_position(), targets, sizeof(targets) / sizeof(*targets));
         phase++;
         break;
 
       case 1:
-        if (follow_curve_2(*curve_to_follow, robot_obj.get_position()))
+        if (follow_curve_2(*curve_to_follow, robot_obj.get_position(), robot_obj.get_not_moving()))
         {
           free(curve_to_follow);
-          break_controller = true;
+          phase = 2;
+          std::cout << "target 1 reached" << std::endl;
+          std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
+          std::cout << "time = " << my_robot->getTime() << std::endl;
+          // break_controller = true;
         }
         break;
-      }
-      // if (follow_curve_2(curve_to_follow, robot_obj.get_position()))
-      //   break_controller = true;
 
-      // if (follow_curve(robot_obj.get_position(), 0.0, 0.0, 0.0))
-      // break_controller = true;
+      case 2:
+        create_curve(&curve_2, robot_obj.get_position(), create_target(0, 0, 180));
+        phase++;
+        break;
+
+      case 3:
+        if (follow_curve_2(curve_2, robot_obj.get_position(), robot_obj.get_not_moving()))
+        {
+          break_controller = true;
+          phase++;
+        }
+        break;
+
+      case 4:
+        set_reg_type(1);
+        if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 1250, 750, 0, robot_obj.get_not_moving()))
+          phase++;
+        break;
+
+      case 5:
+        set_reg_type(-1);
+        if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 1250, 750, 0, robot_obj.get_not_moving()))
+          break_controller = true;
+        break;
+      }
 
       // vel_ref = get_vel_ref();
-      ang_vel_ref = get_ang_vel_ref();
-      acc_ramp(&vel_ref, get_vel_ref(), 2.0);
-      // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 24.0);
+      // ang_vel_ref = get_ang_vel_ref();
+      acc_ramp(&vel_ref, get_vel_ref(), 1.2);
+      acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 18.0);
 
       // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
     }
@@ -92,14 +118,19 @@ int main(int argc, char **argv)
     ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
     vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
 
-    right_motor->setVelocity(vel_control + ang_vel_control);
-    left_motor->setVelocity(vel_control - ang_vel_control);
+    ang_vel_right = vel_control + ang_vel_control;
+    ang_vel_left = vel_control - ang_vel_control;
+    scale_vel_ref(&ang_vel_right, &ang_vel_left, 9);
+    // std::cout << "ang_vel_right  =  " << ang_vel_right << "     ang_vel_left  =  " << ang_vel_left << std::endl;
+
+    right_motor->setVelocity(ang_vel_right);
+    left_motor->setVelocity(ang_vel_left);
 
     if (break_controller) // i >= sizeof(targets) / sizeof(target) ||
     {
       left_motor->setVelocity(0);
       right_motor->setVelocity(0);
-      std::cout << " " << std::endl;
+      std::cout << "controller finished successfully " << std::endl;
       std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
       std::cout << "time = " << my_robot->getTime() << std::endl;
       break;
