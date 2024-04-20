@@ -22,7 +22,7 @@ double ang_vel_ref = 0;
 bool break_controller = false;
 curve *curve_to_follow;
 curve curve_2;
-target targets[3] = {{750, 0, -90}, {250, -750, 0}, {1000, 0, 90}}; // {750, 0, 0}, 
+target targets[3] = {{750, 0, -90}, {500, -750, 0}, {1250, -250, 90}}; // {750, 0, 0},
 static int phase = 0;
 
 PID vel_loop(1.0, 1.0, 0.1, 9);
