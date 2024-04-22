@@ -117,7 +117,7 @@ bool follow_curve_2(curve bezier, target robot_position, bool not_moving)
         {
             bezier_counter++;
             // std::cout << "     x  =  " << robot_obj.get_x() << "         y  =  " << robot_obj.get_y() << std::endl;
-            std::cout << "next x  =  " << bezier.points_low_res[bezier_counter].x << "    next y  =  " << bezier.points_low_res[bezier_counter].y << std::endl;
+            // std::cout << "next x  =  " << bezier.points_low_res[bezier_counter].x << "    next y  =  " << bezier.points_low_res[bezier_counter].y << std::endl;
             // std::cout << "bezier_counter  =  " << bezier_counter << std::endl;
             if (bezier_counter == bezier.number_of_points - 1)
             {

@@ -22,7 +22,7 @@ double ang_vel_ref = 0;
 bool break_controller = false;
 curve *curve_to_follow;
 curve curve_2;
-target targets[3] = {{750, 0, -90}, {500, -750, 0}, {1250, -250, 90}}; // {750, 0, 0},
+target targets[5] = {{750, 500, 0}, {1250, 0, -90}, {0, -750, 180}, {-1250, -500, 90}, {0,0,0}}; // {750, 0, 0},
 static int phase = 0;
 
 PID vel_loop(1.0, 1.0, 0.1, 9);
@@ -71,16 +71,16 @@ int main(int argc, char **argv)
         if (follow_curve_2(*curve_to_follow, robot_obj.get_position(), robot_obj.get_not_moving()))
         {
           free(curve_to_follow);
-          phase = 2;
+          // phase = 2;
           std::cout << "target 1 reached" << std::endl;
           std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
           std::cout << "time = " << my_robot->getTime() << std::endl;
-          // break_controller = true;
+          break_controller = true;
         }
         break;
 
       case 2:
-        create_curve(&curve_2, robot_obj.get_position(), create_target(0, 0, 180));
+        create_curve(&curve_2, robot_obj.get_position(), create_target(0, 0, 0));
         phase++;
         break;
 
