@@ -10,10 +10,10 @@
 #include <vector>
 #include <math.h>
 
-#define VEL_LIMIT 0.1
-#define ANG_VEL_LIMIT 1.2
+#define VEL_LIMIT 0.01
+#define ANG_VEL_LIMIT 0.12
 #define BEZIER_RESOLUTION 1000
-#define POINT_DISTANCE 40.0
+#define POINT_DISTANCE 40
 #define MAX_CURVE_LENGTH 10000
 
 #define OFFS_ROBOT 360
@@ -31,10 +31,8 @@ typedef struct
 typedef struct
 {
     coord points[BEZIER_RESOLUTION * 5];
-    coord points_low_res[MAX_CURVE_LENGTH / (unsigned long)POINT_DISTANCE + 1];
     double distance;
     double min_curve_radius;
-    int number_of_points;
     int number_of_points_2;
     target end_target;
 } curve;

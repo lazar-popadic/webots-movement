@@ -58,8 +58,8 @@ void cubic_bezier_curve(curve *bezier, coord p0, coord p1, coord p2, coord p3)
             if (temp_length >= POINT_DISTANCE)
             {
                 temp_length = 0;
-                bezier->points_low_res[bezier->number_of_points] = bezier->points[i];
-                bezier->number_of_points++;
+                // bezier->points_low_res[bezier->number_of_points] = bezier->points[i];
+                // bezier->number_of_points++;
             }
         }
     }
@@ -105,16 +105,16 @@ void equidistant_coords(coord* new_curve, int* number_of_points, double* distanc
     std::cout << *number_of_points << std::endl;
 }
 
-void add_to_curve(curve *bezier, curve added_curve)
-{
-    for (int i = 0; i < added_curve.number_of_points; i++)
-    {
-        bezier->points_low_res[bezier->number_of_points + i] = added_curve.points_low_res[i];
-    }
-    bezier->distance += added_curve.distance;
-    bezier->number_of_points += added_curve.number_of_points;
-    bezier->end_target = added_curve.end_target;
-}
+// void add_to_curve(curve *bezier, curve added_curve)
+// {
+//     for (int i = 0; i < added_curve.number_of_points; i++)
+//     {
+//         bezier->points_low_res[bezier->number_of_points + i] = added_curve.points_low_res[i];
+//     }
+//     bezier->distance += added_curve.distance;
+//     bezier->number_of_points += added_curve.number_of_points;
+//     bezier->end_target = added_curve.end_target;
+// }
 
 void add_to_curve_2(curve *bezier, curve added_curve)
 {
