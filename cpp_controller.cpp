@@ -22,8 +22,11 @@ double ang_vel_ref = 0;
 bool break_controller = false;
 curve *curve_to_follow;
 curve curve_2;
-target targets[5] = {{750, 500, 0}, {1250, 0, -90}, {0, -750, 180}, {-1250, -500, 90}, {0,0,0}}; // {750, 0, 0},
+target targets[2] = {{1000, 500, 0}, {0, 0, 180}}; // {-1250, -500, 90}
 static int phase = 0;
+coord *coords_to_follow;
+int number_of_points;
+double distance_2;
 
 PID vel_loop(1.0, 1.0, 0.1, 9);
 PID ang_vel_loop(0.1, 0.1, 0.0042, 9);
@@ -64,31 +67,47 @@ int main(int argc, char **argv)
       case 0:
         curve_to_follow = (curve *)malloc(sizeof(curve));
         create_curve_multi(curve_to_follow, robot_obj.get_position(), targets, sizeof(targets) / sizeof(*targets));
+        // add_straight(curve_to_follow, 500);
+        // create_curve(&curve_2,create_target(0,0,180), create_target(-750,-250,-90));
+        // add_to_curve_2(curve_to_follow, curve_2);
+        coords_to_follow = (coord *)malloc((curve_to_follow->distance / POINT_DISTANCE + 1) * sizeof(coord));
+        equidistant_coords(coords_to_follow, &number_of_points, &distance_2, *curve_to_follow);
         phase++;
         break;
 
       case 1:
-        if (follow_curve_2(*curve_to_follow, robot_obj.get_position(), robot_obj.get_not_moving()))
+        // std::cout << *(&(coords_to_follow[2].y)) << std::endl;
+        if (follow_curve_3(coords_to_follow, number_of_points, distance_2, 180, robot_obj.get_position(), robot_obj.get_not_moving()))
         {
           free(curve_to_follow);
-          // phase = 2;
+          free(coords_to_follow);
+          phase = 2;
           std::cout << "target 1 reached" << std::endl;
           std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
           std::cout << "time = " << my_robot->getTime() << std::endl;
-          break_controller = true;
+          // break_controller = true;
         }
         break;
 
       case 2:
-        create_curve(&curve_2, robot_obj.get_position(), create_target(0, 0, 0));
+        curve_to_follow = (curve *)malloc(sizeof(curve));
+        // create_curve_multi(curve_to_follow, robot_obj.get_position(), targets, sizeof(targets) / sizeof(*targets));
+        create_curve(curve_to_follow, robot_obj.get_position(), create_target(-750, -750, -90));
+        coords_to_follow = (coord *)malloc((curve_to_follow->distance / POINT_DISTANCE + 1) * sizeof(coord));
+        equidistant_coords(coords_to_follow, &number_of_points, &distance_2, *curve_to_follow);
         phase++;
         break;
 
       case 3:
-        if (follow_curve_2(curve_2, robot_obj.get_position(), robot_obj.get_not_moving()))
+        if (follow_curve_3(coords_to_follow, number_of_points, distance_2, -90, robot_obj.get_position(), robot_obj.get_not_moving()))
         {
+          free(curve_to_follow);
+          free(coords_to_follow);
+          phase = 2;
+          std::cout << "target 1 reached" << std::endl;
+          std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
+          std::cout << "time = " << my_robot->getTime() << std::endl;
           break_controller = true;
-          phase++;
         }
         break;
 
@@ -107,7 +126,7 @@ int main(int argc, char **argv)
 
       // vel_ref = get_vel_ref();
       // ang_vel_ref = get_ang_vel_ref();
-      acc_ramp(&vel_ref, get_vel_ref(), 1.2);
+      acc_ramp(&vel_ref, get_vel_ref(), 0.8);
       acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 18.0);
 
       // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
