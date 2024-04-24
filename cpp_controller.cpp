@@ -29,10 +29,11 @@ coord *coords_to_follow;
 int number_of_points;
 double distance_2;
 
-PID vel_loop(1.0, 1.0, 0.1, 9);
-PID ang_vel_loop(0.1, 0.1, 0.0042, 9);
+PID vel_loop(1.0, 1.0, 0.1, 2);
+PID ang_vel_loop(0.1, 0.1, 0.0042, 2);
 
 MyRobot robot_obj(0.0, 0.0, 0.0);
+task current_task_status;
 
 int main(int argc, char **argv)
 {
@@ -67,41 +68,46 @@ int main(int argc, char **argv)
       {
       case 0:
         curve_to_follow = (curve *)malloc(sizeof(curve));
-        // create_curve_multi(curve_to_follow, robot_obj.get_position(), targets, sizeof(targets) / sizeof(*targets));
-        // add_straight(curve_to_follow, 500);
-        // create_curve(&curve_2,create_target(0,0,180), create_target(-750,-250,-90));
-        // add_to_curve_2(curve_to_follow, curve_2);
-        create_curve(curve_to_follow, robot_obj.get_position(), create_target(750, 750, 0));
+
+        create_curve(curve_to_follow, robot_obj.get_position(), create_target(750, -750, 0));
+
         curve_3 = (curve *)malloc(sizeof(curve));
-        create_curve(curve_3,create_target(750, 750, 0), create_target(0, 250, 180));
+        create_curve(curve_3, create_target(750, -750, 0), create_target(1250, -250, 90));
         add_to_curve_2(curve_to_follow, *curve_3);
         free(curve_3);
         curve_3 = (curve *)malloc(sizeof(curve));
-        create_curve(curve_3,create_target(0, 250, 180), create_target(-1250, 0, -90));
+        create_curve(curve_3, create_target(1250, -250, 90), create_target(1250, 250, 90));
         add_to_curve_2(curve_to_follow, *curve_3);
-        free(curve_3);
         curve_3 = (curve *)malloc(sizeof(curve));
-        create_curve(curve_3,create_target(-1250, 0, -90), create_target(-750, -750, 0));
+        create_curve(curve_3, create_target(1250, 250, 90), create_target(0, 0, 180));
         add_to_curve_2(curve_to_follow, *curve_3);
         free(curve_3);
-        curve_3 = (curve *)malloc(sizeof(curve));
-        create_curve(curve_3,create_target(-750, -750, 0), create_target(0, 0, 0));
-        add_to_curve_2(curve_to_follow, *curve_3);
-        free(curve_3);
+
         coords_to_follow = (coord *)malloc((curve_to_follow->distance / POINT_DISTANCE + 1) * sizeof(coord));
         equidistant_coords(coords_to_follow, &number_of_points, &distance_2, *curve_to_follow);
         phase++;
         break;
 
       case 1:
-        if (follow_curve_3(coords_to_follow, number_of_points, distance_2, 0, robot_obj.get_position(), robot_obj.get_not_moving()))
+        current_task_status = follow_curve_3(coords_to_follow, number_of_points, distance_2, robot_obj.get_position(), robot_obj.get_not_moving());
+        if (current_task_status.finished)
         {
           free(curve_to_follow);
           free(coords_to_follow);
-          phase = 20;
-          std::cout << "target 1 reached" << std::endl;
-          std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
-          std::cout << "time = " << my_robot->getTime() << std::endl;
+          // if (current_task_status.success)
+          // {
+            phase = 2;
+            std::cout << "target 1 reached" << std::endl;
+            std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
+            std::cout << "time = " << my_robot->getTime() << std::endl;
+          // }
+          // else
+          // {
+          //   phase = 0;
+          //   std::cout << "FAILED!" << std::endl;
+          //   std::cout << "RETRYING..." << std::endl;
+          //   std::cout << "time = " << my_robot->getTime() << std::endl;
+          // }
           // break_controller = true;
         }
         break;
@@ -109,14 +115,20 @@ int main(int argc, char **argv)
       case 2:
         curve_to_follow = (curve *)malloc(sizeof(curve));
         // create_curve_multi(curve_to_follow, robot_obj.get_position(), targets, sizeof(targets) / sizeof(*targets));
-        create_curve(curve_to_follow, robot_obj.get_position(), create_target(0, 0, 0));
+        create_curve(curve_to_follow, robot_obj.get_position(), create_target(0, 750, 0));
+
+        curve_3 = (curve *)malloc(sizeof(curve));
+        create_curve(curve_3, create_target(0, 750, 0), create_target(1250, 750, 0));
+        add_to_curve_2(curve_to_follow, *curve_3);
+        free(curve_3);
+
         coords_to_follow = (coord *)malloc((curve_to_follow->distance / POINT_DISTANCE + 1) * sizeof(coord));
         equidistant_coords(coords_to_follow, &number_of_points, &distance_2, *curve_to_follow);
         phase++;
         break;
 
       case 3:
-        if (follow_curve_3(coords_to_follow, number_of_points, distance_2, -90, robot_obj.get_position(), robot_obj.get_not_moving()))
+        if (follow_curve_3(coords_to_follow, number_of_points, distance_2, robot_obj.get_position(), robot_obj.get_not_moving()).finished)
         {
           free(curve_to_follow);
           free(coords_to_follow);
@@ -142,9 +154,9 @@ int main(int argc, char **argv)
       }
 
       // vel_ref = get_vel_ref();
-      // ang_vel_ref = get_ang_vel_ref();
+      ang_vel_ref = get_ang_vel_ref();
       acc_ramp(&vel_ref, get_vel_ref(), 0.8);
-      acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 18.0);
+      // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 10.0);
 
       // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
     }
@@ -156,7 +168,7 @@ int main(int argc, char **argv)
 
     ang_vel_right = vel_control + ang_vel_control;
     ang_vel_left = vel_control - ang_vel_control;
-    scale_vel_ref(&ang_vel_right, &ang_vel_left, 9);
+    scale_vel_ref(&ang_vel_right, &ang_vel_left, 2);
     // std::cout << "ang_vel_right  =  " << ang_vel_right << "     ang_vel_left  =  " << ang_vel_left << std::endl;
 
     right_motor->setVelocity(ang_vel_right);

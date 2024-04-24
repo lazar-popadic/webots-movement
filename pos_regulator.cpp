@@ -19,6 +19,8 @@ double error_phi_prim_1 = 0;
 double error_phi_prim_2 = 0;
 double error_phi_final = 0;
 
+double error_sum = 0;
+
 coord p0;
 coord p1;
 coord p2;
@@ -33,6 +35,7 @@ int bezier_total = 0;
 double cur_segment_len = 0;
 coord cur_error = {0, 0};
 coord next_error = {0, 0};
+coord previous_error = {0, 0};
 double cur_dis_error = 0;
 double cur_dis_error_projected = 0;
 double next_dis_error = 0;
@@ -53,6 +56,8 @@ static void normalize_error_phi();
 static void normalize_error_phi_prim();
 static void rotate(bool not_moving);
 static void go_to_xy(bool not_moving);
+
+task status;
 
 void normalize_angle(double *angle)
 {
@@ -78,13 +83,13 @@ static void normalize_error_phi_prim()
         error_phi_prim += 360.0;
 }
 
-bool follow_curve_3(coord *coords_to_follow, int number_of_points, double total_distance, double desired_phi, target robot_position, bool not_moving)
+task follow_curve_3(coord *coords_to_follow, int number_of_points, double total_distance, target robot_position, bool not_moving)
 {
-    done = false;
-
     switch (phase)
     {
     case 0: // curve
+        status.finished = false;
+        status.success = false;
         cur_error.x = coords_to_follow[bezier_counter].x - robot_position.x;
         cur_error.y = coords_to_follow[bezier_counter].y - robot_position.y;
         next_error.x = coords_to_follow[bezier_counter + 1].x - robot_position.x;
@@ -92,6 +97,7 @@ bool follow_curve_3(coord *coords_to_follow, int number_of_points, double total_
 
         error_phi_prim_1 = atan2(cur_error.y, cur_error.x) * 180 / M_PI - robot_position.phi;
         error_phi_prim_2 = atan2(next_error.y, next_error.x) * 180 / M_PI - robot_position.phi;
+        // error_phi_prim_2 = atan2(coords_to_follow[bezier_counter + 1].y - coords_to_follow[bezier_counter].y, coords_to_follow[bezier_counter + 1].x - coords_to_follow[bezier_counter].x) * 180 / M_PI - robot_position.phi;
         normalize_angle(&error_phi_prim_1);
         normalize_angle(&error_phi_prim_2);
 
@@ -113,8 +119,9 @@ bool follow_curve_3(coord *coords_to_follow, int number_of_points, double total_
         vel_ref = bezier_distance_loop.calculate_zero(distance);
         ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
 
-        if (cur_dis_error < POINT_DISTANCE * 2.0 && cur_dis_error_projected < 0)
+        if (cur_dis_error < POINT_DISTANCE * 1.0 && cur_dis_error_projected < 0)
         {
+            error_sum += fabs(cur_dis_error * cos(error_phi_prim_1 * M_PI / 180));
             bezier_counter++;
             // std::cout << "     x  =  " << robot_obj.get_x() << "         y  =  " << robot_obj.get_y() << std::endl;
             // std::cout << "next x  =  " << coords_to_follow[bezier_counter].x << "    next y  =  " << coords_to_follow[bezier_counter].y << std::endl;
@@ -131,48 +138,56 @@ bool follow_curve_3(coord *coords_to_follow, int number_of_points, double total_
                 // bezier_counter = 0;
             }
         }
+        if (cur_dis_error > POINT_DISTANCE * 4.0)
+        {
+            vel_ref = 0;
+            ang_vel_ref = 0;
+            phase = 1;
+            bezier_counter = 0;
+            status.finished = true;
+            status.success = false;
+        }
         break;
 
     case 1: // ending
-        error_x = coords_to_follow[number_of_points].x - robot_position.x;
-        error_y = coords_to_follow[number_of_points].y - robot_position.y;
+        cur_error.x = coords_to_follow[number_of_points].x - robot_position.x;
+        cur_error.y = coords_to_follow[number_of_points].y - robot_position.y;
+        
+        error_phi_prim = atan2(cur_error.y, cur_error.x) * 180 / M_PI - robot_position.phi;
+        normalize_angle(&error_phi_prim);
+        error_phi = atan2(coords_to_follow[number_of_points].y - coords_to_follow[number_of_points - 1].y, coords_to_follow[number_of_points].x - coords_to_follow[number_of_points - 1].x) * 180 / M_PI - robot_position.phi;
+        normalize_angle(&error_phi);
+        
+        cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
+        cur_dis_error *= cos(error_phi_prim * M_PI / 180);
+        vel_ref = distance_loop.calculate_zero(cur_dis_error);
 
-        error_phi_prim = atan2(error_y, error_x) * 180 / M_PI - robot_position.phi;
-        normalize_error_phi_prim();
-        error_phi = desired_phi - robot_position.phi;
-        normalize_error_phi();
-
-        distance = sqrt(error_x * error_x + error_y * error_y);
-        distance *= cos(error_phi_prim * M_PI / 180);
-        vel_ref = distance_loop.calculate_zero(distance);
-
-        t = distance / POINT_DISTANCE;
+        t = cur_dis_error / POINT_DISTANCE;
         saturation(&t, 1, 0);
 
         error_phi_final = t * error_phi_prim + (1 - t) * error_phi;
 
         ang_vel_ref = angle_loop.calculate_zero(error_phi_final);
 
-        // std::cout << "t       =  " << t << std::endl;
-        // std::cout << "error_phi_prim       =  " << error_phi_prim << "           error_phi             =  " << error_phi << std::endl;
-
-        if (distance < 0 && not_moving)
+        if (cur_dis_error < 0 && not_moving)
         {
+            error_sum += fabs(cur_dis_error * cos(error_phi_prim * M_PI / 180));
             vel_ref = 0;
             ang_vel_ref = 0;
-            done = true;
+            status.finished = true;
+            status.success = false;
             phase = 0;
 
             // error_x = bezier.end_target.x - robot_position.x;
             // error_y = bezier.end_target.y - robot_position.y;
             // distance = sqrt(error_x * error_x + error_y * error_y);
             // std::cout << "final distance error =  " << distance << "  mm" << std::endl;
-            // std::cout << "final angle error    =  " << error_phi << "  degrees" << std::endl;
+            // std::cout << "error_sum    =  " << error_sum << "  mm" << std::endl;
         }
         break;
     }
 
-    return done;
+    return status;
 }
 
 bool calculate(double robot_x, double robot_y, double robot_phi, double desired_x, double desired_y, double desired_phi, bool not_moving)

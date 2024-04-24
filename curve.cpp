@@ -1,18 +1,5 @@
 #include "main.hpp"
 
-void create_curve_multi(curve *bezier, target robot_position, target targets[], int number_of_targets)
-{
-    curve temp_curve[number_of_targets];
-    create_curve(bezier, robot_position, targets[0]);
-    for (int i = 1; i < number_of_targets; i++)
-    {
-        create_curve(&temp_curve[i], targets[i - 1], targets[i]);
-        add_to_curve_2(bezier, temp_curve[i]);
-        // curve *temp_curve = (curve*)malloc(sizeof(target));
-        // free(&temp_curve);
-    }
-}
-
 void create_curve(curve *bezier, target robot_position, target desired_position)
 {
     static coord p0;
@@ -96,25 +83,14 @@ void equidistant_coords(coord* new_curve, int* number_of_points, double* distanc
             (*number_of_points)++;
             temp_length = 0;
             new_curve[*number_of_points] = bezier.points[i];
-            std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
+            // std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
         }
     }
     (*number_of_points)++;
     new_curve[*number_of_points] = bezier.points[bezier.number_of_points_2 - 1];
-    std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
-    std::cout << *number_of_points << std::endl;
+    // std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
+    // std::cout << *number_of_points << std::endl;
 }
-
-// void add_to_curve(curve *bezier, curve added_curve)
-// {
-//     for (int i = 0; i < added_curve.number_of_points; i++)
-//     {
-//         bezier->points_low_res[bezier->number_of_points + i] = added_curve.points_low_res[i];
-//     }
-//     bezier->distance += added_curve.distance;
-//     bezier->number_of_points += added_curve.number_of_points;
-//     bezier->end_target = added_curve.end_target;
-// }
 
 void add_to_curve_2(curve *bezier, curve added_curve)
 {
