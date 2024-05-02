@@ -130,13 +130,13 @@ void equ_coords(new_curve *curve_ptr)
             curve_ptr->num_equ_pts++;
             temp_length = 0;
             curve_ptr->equ_pts[curve_ptr->num_equ_pts] = curve_ptr->pts[i];
-            std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
+            // std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
         }
     }
     curve_ptr->num_equ_pts++;
     curve_ptr->equ_pts[curve_ptr->num_equ_pts] = curve_ptr->pts[BEZIER_RESOLUTION - 1];
-    std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
-    std::cout << curve_ptr->num_equ_pts << std::endl;
+    // std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
+    // std::cout << curve_ptr->num_equ_pts << std::endl;
 }
 
 void equidistant_coords(coord *new_curve, int *number_of_points, double *distance, curve bezier)
@@ -155,13 +155,13 @@ void equidistant_coords(coord *new_curve, int *number_of_points, double *distanc
             (*number_of_points)++;
             temp_length = 0;
             new_curve[*number_of_points] = bezier.points[i];
-            std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
+            // std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
         }
     }
     (*number_of_points)++;
     new_curve[*number_of_points] = bezier.points[bezier.number_of_points_2 - 1];
-    std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
-    std::cout << *number_of_points << std::endl;
+    // std::cout << new_curve[*number_of_points].x << "    " << new_curve[*number_of_points].y << std::endl;
+    // std::cout << *number_of_points << std::endl;
 }
 
 void add_to_curve_2(curve *bezier, curve added_curve)

@@ -35,7 +35,7 @@ PID ang_vel_loop(0.1, 0.1, 0.0042, 4);
 MyRobot robot_obj(0.0, 0.0, 0.0);
 task current_task_status;
 
-new_curve* new_curve_ptr;
+new_curve *new_curve_ptr;
 
 int main(int argc, char **argv)
 {
@@ -81,41 +81,49 @@ int main(int argc, char **argv)
         // phase++;
 
         new_curve_ptr = (new_curve *)malloc(sizeof(new_curve));
-        create_full_curve(new_curve_ptr, create_target(750, -500, -90));
+        create_full_curve(new_curve_ptr, create_target(1250, 750, 0));
 
-        free(new_curve_ptr->equ_pts);
-        free(new_curve_ptr);
+        phase = 19;
+        break;
 
-        phase = 20;
+      case 19:
+        current_task_status = follow_curve_4(new_curve_ptr);
+        if (current_task_status.finished)
+        {
+          phase = 20;
+          std::cout << "RADI !!!!!!!!" << std::endl;
+        }
         break;
 
       case 20:
+        free(new_curve_ptr->equ_pts);
+        free(new_curve_ptr);
         break_controller = true;
         break;
 
-      case 1:
-        current_task_status = follow_curve_3(coords_to_follow, number_of_points, distance_2, robot_obj.get_position(), robot_obj.get_not_moving());
-        if (current_task_status.finished)
-        {
-          // free(curve_to_follow);
-          free(coords_to_follow);
-          // if (current_task_status.success)
-          // {
-          phase = 2;
-          std::cout << "target 1 reached" << std::endl;
-          std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
-          std::cout << "time = " << my_robot->getTime() << std::endl;
-          // }
-          // else
-          // {
-          //   phase = 0;
-          //   std::cout << "FAILED!" << std::endl;
-          //   std::cout << "RETRYING..." << std::endl;
-          //   std::cout << "time = " << my_robot->getTime() << std::endl;
-          // }
-          break_controller = true;
-        }
-        break;
+      // case 1:
+      //   current_task_status = follow_curve_3(coords_to_follow, number_of_points, distance_2, robot_obj.get_position(), robot_obj.get_not_moving());
+      //   if (current_task_status.finished)
+      //   {
+      //     // free(curve_to_follow);
+      //     free(coords_to_follow);
+      //     // if (current_task_status.success)
+      //     // {
+      //     phase = 2;
+      //     std::cout << "target 1 reached" << std::endl;
+      //     std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
+      //     std::cout << "time = " << my_robot->getTime() << std::endl;
+      //     // }
+      //     // else
+      //     // {
+      //     //   phase = 0;
+      //     //   std::cout << "FAILED!" << std::endl;
+      //     //   std::cout << "RETRYING..." << std::endl;
+      //     //   std::cout << "time = " << my_robot->getTime() << std::endl;
+      //     // }
+      //     break_controller = true;
+      //   }
+      //   break;
 
         // case 2:
         //   curve_to_follow = (curve *)malloc(sizeof(curve));

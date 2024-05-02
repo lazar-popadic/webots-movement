@@ -75,4 +75,6 @@ void create_full_curve(new_curve *curve_ptr, target desired_position);
 void cubic_bezier_pts(new_curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
 void equ_coords(new_curve *curve_ptr);
 MyRobot get_robot();
+task follow_curve_4(new_curve *curve_ptr);
+
 #endif /* __MAIN_HPP */
