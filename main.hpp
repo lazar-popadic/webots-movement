@@ -10,14 +10,14 @@
 #include <vector>
 #include <math.h>
 
-#define VEL_LIMIT 0.1
-#define ANG_VEL_LIMIT 1.2
+#define VEL_LIMIT 0.001
+#define ANG_VEL_LIMIT 0.012
 #define BEZIER_RESOLUTION 1000
-#define POINT_DISTANCE 40
+#define POINT_DISTANCE 50
 #define MAX_CURVE_LENGTH 10000
 
-#define OFFS_ROBOT 360
-#define OFFS_DESIRED 720
+#define OFFS_ROBOT 600
+#define OFFS_DESIRED 1000
 
 using namespace webots;
 
@@ -29,20 +29,11 @@ typedef struct
 
 typedef struct
 {
-    coord points[BEZIER_RESOLUTION * 5];
-    double distance;
-    double min_curve_radius;
-    int number_of_points_2;
-    target end_target;
-} curve;
-
-typedef struct
-{
     coord pts[BEZIER_RESOLUTION];
     coord* equ_pts;
     int num_equ_pts;
     double dis;
-} new_curve;
+} curve;
 
 typedef struct
 {
@@ -61,20 +52,13 @@ double abs_max(double a, double b);
 void scale_vel_ref(double *ref_1, double *ref_2, double limit);
 int sign(double signal);
 
-void create_curve(curve *bezier, target robot_position, target desired_position);
-void cubic_bezier_curve(curve *bezier, coord p0, coord p1, coord p2, coord p3);
 target create_target(double x, double y, double phi);
-
-void equidistant_coords(coord* new_curve, int* number_of_points, double* distance, curve bezier);
-void cubic_bezier_simple(curve *bezier, coord p0, coord p1, coord p2, coord p3);
-void add_to_curve_2(curve *bezier, curve added_curve);
-task follow_curve_3(coord* coords_to_follow, int number_of_points, double total_distance, target robot_position, bool not_moving);
 void add_straight (curve *bezier, double distance);
 
-void create_full_curve(new_curve *curve_ptr, target desired_position);
-void cubic_bezier_pts(new_curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
-void equ_coords(new_curve *curve_ptr);
+void create_curve(curve *curve_ptr, target desired_position);
+void cubic_bezier_pts(curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
+void equ_coords(curve *curve_ptr);
 MyRobot get_robot();
-task follow_curve_4(new_curve *curve_ptr);
+task follow_curve(curve *curve_ptr);
 
 #endif /* __MAIN_HPP */
