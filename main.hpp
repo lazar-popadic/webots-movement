@@ -38,6 +38,14 @@ typedef struct
 
 typedef struct
 {
+    coord pts[BEZIER_RESOLUTION];
+    coord* equ_pts;
+    int num_equ_pts;
+    double dis;
+} new_curve;
+
+typedef struct
+{
     int8_t  finished:   1;
     int8_t  success:    1;
 } task;
@@ -62,4 +70,9 @@ void cubic_bezier_simple(curve *bezier, coord p0, coord p1, coord p2, coord p3);
 void add_to_curve_2(curve *bezier, curve added_curve);
 task follow_curve_3(coord* coords_to_follow, int number_of_points, double total_distance, target robot_position, bool not_moving);
 void add_straight (curve *bezier, double distance);
+
+void create_full_curve(new_curve *curve_ptr, target desired_position);
+void cubic_bezier_pts(new_curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
+void equ_coords(new_curve *curve_ptr);
+MyRobot get_robot();
 #endif /* __MAIN_HPP */

@@ -160,7 +160,8 @@ task follow_curve_3(coord *coords_to_follow, int number_of_points, double total_
         
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error *= cos(error_phi_prim * M_PI / 180);
-        vel_ref = distance_loop.calculate_zero(cur_dis_error);
+        // vel_ref = distance_loop.calculate_zero(cur_dis_error);
+        vel_ref = distance_loop.calculate_zero(cur_dis_error + 100);        // dodaj jedan if sa ovako necim, samo ne budz
 
         t = cur_dis_error / POINT_DISTANCE;
         saturation(&t, 1, 0);
@@ -169,7 +170,7 @@ task follow_curve_3(coord *coords_to_follow, int number_of_points, double total_
 
         ang_vel_ref = angle_loop.calculate_zero(error_phi_final);
 
-        if (cur_dis_error < 0 && not_moving)
+        if (cur_dis_error < 0)    // ovde izbaci i not moving i samo cepaj
         {
             error_sum += fabs(cur_dis_error * cos(error_phi_prim * M_PI / 180));
             vel_ref = 0;
