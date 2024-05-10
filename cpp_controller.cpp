@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 
       case 6:
         curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(-1250, -250, -90));
+        create_curve(curve_ptr, create_target(-750, 250, -90));
 
         phase = 7;
         break;
@@ -120,30 +120,14 @@ int main(int argc, char **argv)
         current_task_status = follow_curve(curve_ptr);
         if (current_task_status.finished)
         {
-          phase = 8;
+          phase = 10;
           std::cout << "target 4 reached" << std::endl;
         }
         break;
 
-        case 8:
+      case 10:
         curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(-500, -750, 0));
-
-        phase = 9;
-        break;
-
-      case 9:
-        current_task_status = follow_curve(curve_ptr);
-        if (current_task_status.finished)
-        {
-          phase = 10;
-          std::cout << "target 5 reached" << std::endl;
-        }
-        break;
-
-        case 10:
-        curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(0, 0, 90));
+        create_curve(curve_ptr, create_target(-500, 0, 0));
 
         phase = 11;
         break;
@@ -152,8 +136,19 @@ int main(int argc, char **argv)
         current_task_status = follow_curve(curve_ptr);
         if (current_task_status.finished)
         {
-          phase = 20;
-          std::cout << "target 6 reached" << std::endl;
+          if (current_task_status.success)
+          {
+            phase = 20;
+            std::cout << "target 5 reached" << std::endl;
+          }
+          else
+          {
+            vel_ref = 0;
+            ang_vel_ref = 0;
+            phase = 10;
+            std::cout << "target 5 failed" << std::endl;
+            std::cout << "retrying" << std::endl;
+          }
         }
         break;
 

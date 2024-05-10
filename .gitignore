@@ -1,4 +1,6 @@
 build/*
-Makefile
 .vscode/*
 cpp_controller
+*.exe
+bezier.cpp
+.vs/

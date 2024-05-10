@@ -77,13 +77,15 @@ task follow_curve(curve *curve_ptr)
             t = cur_dis_error_projected / cur_segment_len;
         }
         saturation(&t, 1, 0);
+        // t = 1 / ( 1 + exp ( -10 * ( t - 0.5 ) ) );   // losije je sa ovim
 
         error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
         normalize_angle(&error_phi_prim);
         vel_ref = bezier_distance_loop.calculate_zero(distance);
         ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
+        // std::cout << "cur_dis_error    =  " << cur_dis_error << "  mm" << std::endl;
 
-        if (cur_dis_error < POINT_DISTANCE * 1.0 && cur_dis_error_projected < 0)
+        if (cur_dis_error < 20 && cur_dis_error_projected < 0)
         {
             error_sum += fabs(cur_dis_error * cos(error_phi_prim_1 * M_PI / 180));
             curve_cnt++;
@@ -93,7 +95,7 @@ task follow_curve(curve *curve_ptr)
                 curve_cnt = 0;
             }
         }
-        if (cur_dis_error > POINT_DISTANCE * 4.0)
+        if (cur_dis_error > POINT_DISTANCE * 1.1)
         {
             vel_ref = 0;
             ang_vel_ref = 0;
