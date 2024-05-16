@@ -54,7 +54,8 @@ void equ_coords(curve *curve_ptr)
     {
         cur_dis = sqrt((curve_ptr->pts[i].x - curve_ptr->pts[i - 1].x) * (curve_ptr->pts[i].x - curve_ptr->pts[i - 1].x) + (curve_ptr->pts[i].y - curve_ptr->pts[i - 1].y) * (curve_ptr->pts[i].y - curve_ptr->pts[i - 1].y));
         curve_ptr->dis += cur_dis;
-        temp_length += cur_dis;
+        // temp_length += cur_dis;
+        temp_length = sqrt((curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->pts[i].x) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->pts[i].x) + (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->pts[i].y) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->pts[i].y));
         if (temp_length >= POINT_DISTANCE)
         {
             curve_ptr->num_equ_pts++;
@@ -63,24 +64,12 @@ void equ_coords(curve *curve_ptr)
             // std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
         }
     }
-    curve_ptr->num_equ_pts++;
+    // cur_dis = sqrt((curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) + (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts].y) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - ccurve_ptr->equ_pts[curve_ptr->num_equ_pts].y));
+    // curve_ptr->num_equ_pts++;
     curve_ptr->equ_pts[curve_ptr->num_equ_pts] = curve_ptr->pts[BEZIER_RESOLUTION - 1];
     // std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
     // std::cout << curve_ptr->num_equ_pts << std::endl;
 }
-
-// void add_straight(curve *bezier, double distance)
-// {
-//     for (int i = 0; i < distance / POINT_DISTANCE - 1; i++)
-//     {
-//         bezier->points[bezier->number_of_points_2].x = bezier->points[bezier->number_of_points_2 - 1].x + POINT_DISTANCE * cos(bezier->end_target.phi * M_PI / 180);
-//         bezier->points[bezier->number_of_points_2].y = bezier->points[bezier->number_of_points_2 - 1].y + POINT_DISTANCE * sin(bezier->end_target.phi * M_PI / 180);
-//         bezier->number_of_points_2++;
-//     }
-//     bezier->points[bezier->number_of_points_2].x = bezier->points[bezier->number_of_points_2 - 1].x + POINT_DISTANCE * cos(bezier->end_target.phi);
-//     bezier->points[bezier->number_of_points_2].y = bezier->points[bezier->number_of_points_2 - 1].y + POINT_DISTANCE * sin(bezier->end_target.phi);
-//     bezier->number_of_points_2++;
-// }
 
 target create_target(double x, double y, double phi)
 {

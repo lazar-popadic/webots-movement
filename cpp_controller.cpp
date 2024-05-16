@@ -20,7 +20,6 @@ int8_t counter = 1;
 double vel_ref = 0;
 double ang_vel_ref = 0;
 bool break_controller = false;
-static int phase = 0;
 
 PID vel_loop(1.0, 1.0, 0.1, 12);
 PID ang_vel_loop(0.1, 0.1, 0.0042, 12);
@@ -29,6 +28,9 @@ MyRobot robot_obj(0.0, 0.0, 0.0);
 task current_task_status;
 
 curve *curve_ptr;
+
+static int phase = 0;
+target desired_position;
 
 int main(int argc, char **argv)
 {
@@ -59,11 +61,12 @@ int main(int argc, char **argv)
     if (!(counter % position_prescaler))
     {
       counter = 1;
+      // simple_move(desired_position);
       switch (phase)
       {
       case 0:
         curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(750, -750, 0));
+        create_curve(curve_ptr, create_target(-1250, 750, 180));
 
         phase = 1;
         break;
@@ -72,83 +75,8 @@ int main(int argc, char **argv)
         current_task_status = follow_curve(curve_ptr);
         if (current_task_status.finished)
         {
-          phase = 2;
+          phase = 20;
           std::cout << "target 1 reached" << std::endl;
-        }
-        break;
-
-      case 2:
-        curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(1250, 500, 90));
-
-        phase = 3;
-        break;
-
-      case 3:
-        current_task_status = follow_curve(curve_ptr);
-        if (current_task_status.finished)
-        {
-          phase = 4;
-          std::cout << "target 2 reached" << std::endl;
-        }
-        break;
-
-      case 4:
-        curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(0, 750, 180));
-
-        phase = 5;
-        break;
-
-      case 5:
-        current_task_status = follow_curve(curve_ptr);
-        if (current_task_status.finished)
-        {
-          phase = 6;
-          std::cout << "target 3 reached" << std::endl;
-        }
-        break;
-
-      case 6:
-        curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(-750, 250, -90));
-
-        phase = 7;
-        break;
-
-      case 7:
-        current_task_status = follow_curve(curve_ptr);
-        if (current_task_status.finished)
-        {
-          phase = 10;
-          std::cout << "target 4 reached" << std::endl;
-        }
-        break;
-
-      case 10:
-        curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(-500, 0, 0));
-
-        phase = 11;
-        break;
-
-      case 11:
-        current_task_status = follow_curve(curve_ptr);
-        if (current_task_status.finished)
-        {
-          if (current_task_status.success)
-          {
-            phase = 20;
-            std::cout << "target 5 reached" << std::endl;
-          }
-          else
-          {
-            vel_ref = 0;
-            ang_vel_ref = 0;
-            phase = 10;
-            std::cout << "target 5 failed" << std::endl;
-            std::cout << "retrying" << std::endl;
-          }
         }
         break;
 
@@ -162,11 +90,24 @@ int main(int argc, char **argv)
         //     phase++;
         //   break;
 
-        // case 5:
-        //   set_reg_type(-1);
-        //   if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 1250, 750, 0, robot_obj.get_not_moving()))
-        //     break_controller = true;
-        //   break;
+        case 5:
+          move_to_xy(-1250,750);
+          phase = 6;
+          break;
+
+        case 6:
+          if (!get_movement_status())
+            phase = 7;
+          break;
+
+        case 7:
+          rotate_to_angle(180);
+          phase = 8;
+          break;
+
+        case 8:
+          if (!get_movement_status())break_controller = true;
+          break;
       }
 
       // vel_ref = get_vel_ref();
@@ -209,4 +150,19 @@ int main(int argc, char **argv)
 MyRobot get_robot()
 {
   return robot_obj;
+}
+
+void move_to_xy (double x, double y)
+{
+  movement_started();
+  set_reg_type(1);
+  desired_position.x = x;
+  desired_position.y = y;
+}
+
+void rotate_to_angle (double phi)
+{
+  movement_started();
+  set_reg_type(-1);
+  desired_position.phi = phi;
 }

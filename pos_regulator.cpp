@@ -36,17 +36,22 @@ bool done = true;
 int8_t reg_type = 0;
 int8_t phase = 0;
 
-PID distance_loop(0.16, 0.04, 0.0, 10);
-PID angle_loop(2.5, 0.56, 0.0, 72);
+// PID distance_loop(0.16, 0.04, 0.0, 10);
+// PID angle_loop(2.5, 0.56, 0.0, 72);
+PID distance_loop(0.1, 0.0, 0.0, 10);
+PID angle_loop(1.0, 0.0, 0.0, 72);
 
-PID bezier_distance_loop(0.16, 0.04, 0.0, 10);
-PID bezier_angle_loop(2.0, 0.02, 0.08, 72);
+// PID bezier_distance_loop(0.16, 0.04, 0.0, 10);
+// PID bezier_angle_loop(2.0, 0.02, 0.08, 72);
+PID bezier_distance_loop(0.004, 0.0, 0.0, 10);
+PID bezier_angle_loop(2.0, 0.0, 0.0, 72);
 double bezier_distance = 0;
 
-static void rotate(bool not_moving);
-static void go_to_xy(bool not_moving);
+static void rotate();
+static void go_to_xy();
 
 task status;
+bool movement_status;
 
 task follow_curve(curve *curve_ptr)
 {
@@ -69,23 +74,25 @@ task follow_curve(curve *curve_ptr)
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim_1 * M_PI / 180);
 
-        if (curve_cnt != curve_ptr->num_equ_pts)
+        // if (curve_cnt != curve_ptr->num_equ_pts)
             t = cur_dis_error_projected / POINT_DISTANCE;
-        else
-        {
-            cur_segment_len = sqrt((curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) * (curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) + (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y) * (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y));
-            t = cur_dis_error_projected / cur_segment_len;
-        }
+        // else
+        // {
+        //     cur_segment_len = sqrt((curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) * (curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) + (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y) * (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y));
+        //     t = cur_dis_error_projected / cur_segment_len;
+        // }
         saturation(&t, 1, 0);
         // t = 1 / ( 1 + exp ( -10 * ( t - 0.5 ) ) );   // losije je sa ovim
 
         error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
         normalize_angle(&error_phi_prim);
-        vel_ref = bezier_distance_loop.calculate_zero(distance);
-        ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
+        // vel_ref = bezier_distance_loop.calculate_zero(distance);
+        vel_ref = 0.08 * distance;
+        // ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
+        ang_vel_ref = 1.0 * error_phi_prim;
         // std::cout << "cur_dis_error    =  " << cur_dis_error << "  mm" << std::endl;
 
-        if (cur_dis_error < 20 && cur_dis_error_projected < 0)
+        if (cur_dis_error_projected < 0)
         {
             error_sum += fabs(cur_dis_error * cos(error_phi_prim_1 * M_PI / 180));
             curve_cnt++;
@@ -95,15 +102,15 @@ task follow_curve(curve *curve_ptr)
                 curve_cnt = 0;
             }
         }
-        if (cur_dis_error > POINT_DISTANCE * 1.1)
-        {
-            vel_ref = 0;
-            ang_vel_ref = 0;
-            phase = 1;
-            curve_cnt = 0;
-            status.finished = true;
-            status.success = false;
-        }
+        // if (cur_dis_error > POINT_DISTANCE * 1.2)
+        // {
+        //     vel_ref = 0;
+        //     ang_vel_ref = 0;
+        //     phase = 1;
+        //     curve_cnt = 0;
+        //     status.finished = true;
+        //     status.success = false;
+        // }
         break;
 
     case 1: // ending
@@ -116,23 +123,28 @@ task follow_curve(curve *curve_ptr)
         normalize_angle(&error_phi);
 
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
-        cur_dis_error *= cos(error_phi_prim * M_PI / 180);
+        cur_dis_error_projected = cur_dis_error * cos(error_phi_prim * M_PI / 180);
         vel_ref = distance_loop.calculate_zero(cur_dis_error);
         // vel_ref = 6;
         // vel_ref = distance_loop.calculate_zero(cur_dis_error + 100);        // dodaj jedan if sa ovako necim, samo ne budz
 
-        t = cur_dis_error / POINT_DISTANCE;
+        // t = cur_dis_error_projected / POINT_DISTANCE;
+        cur_segment_len = sqrt((curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].x) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].x) + (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].y) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].y));
+        t = cur_dis_error_projected / cur_segment_len;
         saturation(&t, 1, 0);
 
         error_phi_final = t * error_phi_prim + (1 - t) * error_phi;
 
         ang_vel_ref = angle_loop.calculate_zero(error_phi_final);
 
-        if (cur_dis_error < 0)
+        if (cur_dis_error_projected < 0)
         {
             error_sum += fabs(cur_dis_error * cos(error_phi_prim * M_PI / 180));
             status.finished = true;
-            status.success = false;
+            // if (cur_dis_error > POINT_DISTANCE * 1.2)
+            //     status.success = false;
+            // else
+                status.success = true;
             phase = 0;
 
             // std::cout << "error_sum    =  " << error_sum << "  mm" << std::endl;
@@ -146,72 +158,73 @@ task follow_curve(curve *curve_ptr)
     return status;
 }
 
-bool calculate(double robot_x, double robot_y, double robot_phi, double desired_x, double desired_y, double desired_phi, bool not_moving)
+// task move_to_xy(double desired_x, double desired_y)
+// {
+//     set_reg_type(1);
+
+// }
+
+void simple_move(target desired)
 {
     done = false;
-    error_x = desired_x - robot_x;
-    error_y = desired_y - robot_y;
-    error_phi = desired_phi - robot_phi;
-    error_phi_prim = atan2(error_y, error_x) * 180 / M_PI - robot_phi;
+    error_x = desired.x - get_robot().get_position().x;
+    error_y = desired.y - get_robot().get_position().y;
+    error_phi = desired.phi - get_robot().get_position().phi;
+    error_phi_prim = atan2(error_y, error_x) * 180 / M_PI - get_robot().get_position().phi;
     normalize_angle(&error_phi);
     normalize_angle(&error_phi_prim);
     distance = sqrt(error_x * error_x + error_y * error_y);
     switch (reg_type)
     {
     case -1: // rotate
-        rotate(not_moving);
+        rotate();
         break;
     case 1: // go_to_xy
-        go_to_xy(not_moving);
+        go_to_xy();
         break;
     }
-
-    return done;
 }
 
-static void rotate(bool not_moving)
+static void rotate()
 {
     vel_ref = 0;
-    ang_vel_ref = angle_loop.calculate_zero(error_phi);
-    if (fabs(error_phi) < PHI_LIMIT && not_moving)
+    ang_vel_ref = 1.0 * error_phi;
+    if (fabs(error_phi) < PHI_LIMIT)
     {
         vel_ref = 0;
         ang_vel_ref = 0;
         reg_type = 0;
-        done = true;
+        movement_finished();
     }
 }
 
-static void go_to_xy(bool not_moving)
+static void go_to_xy()
 {
     switch (phase)
     {
     case 0: // rot2pos
         vel_ref = 0;
-        ang_vel_ref = angle_loop.calculate_zero(error_phi_prim);
-        if (fabs(error_phi_prim) < PHI_PRIM_LIMIT && not_moving)
+        ang_vel_ref = 1.0 * error_phi_prim;
+        if (fabs(error_phi_prim) < PHI_PRIM_LIMIT)
             phase = 1;
         break;
 
     case 1: // tran
         if (fabs(error_phi_prim) > 90)
-            vel_ref = -distance_loop.calculate_zero(distance);
+            vel_ref = - 0.08 * distance;
         else
-            vel_ref = distance_loop.calculate_zero(distance);
+            vel_ref = 0.08 * distance;
         if (fabs(distance) > DISTANCE_LIMIT2)
-        {
-            ang_vel_ref = angle_loop.calculate_zero(error_phi_prim);
-            // ref[0]*=1.0;
-        }
+            ang_vel_ref = 1.0 * error_phi_prim;
         else
             ang_vel_ref = 0;
-        if (fabs(distance) < DISTANCE_LIMIT && not_moving)
+        if (distance * cos(error_phi_prim) < 0)
         {
             vel_ref = 0;
             ang_vel_ref = 0;
             phase = 0;
             reg_type = 0;
-            done = true;
+            movement_finished();
         }
         break;
     }
@@ -281,4 +294,19 @@ void normalize_angle(double *angle)
         *angle -= 360.0;
     else if (*angle < -180.0)
         *angle += 360.0;
+}
+
+void movement_started()
+{
+    movement_status = 1;
+}
+
+void movement_finished()
+{
+    movement_status = 0;
+}
+
+bool get_movement_status()
+{
+    return movement_status;
 }
