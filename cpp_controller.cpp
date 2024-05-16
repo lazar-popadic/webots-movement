@@ -72,7 +72,7 @@ int main(int argc, char **argv)
       acc_ramp(&vel_ref, get_vel_ref(), 0.2);
       acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 2.4);
 
-      // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
+      // std::cout << "vel_ref  =  " << vel_ref << "       ang_vel_ref  =  " << ang_vel_ref << std::endl;
     }
 
     robot_obj.is_moving(VEL_LIMIT, ANG_VEL_LIMIT);
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     switch (phase)
       {
       case 0:
-        move_on_path(-1250, -750, 0, BACW);
+        move_on_path(0, -750, 180, BACW);
         phase = 1;
         break;
 
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
         break;
 
       case 2:
-        move_to_xy(750,-750, FORW);
+        move_on_path(0, 0, 0, FORW);
         phase = 3;
         break;
 
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
         break;
 
       case 4:
-        move_on_path(0, 0, 180, FORW);
+        move_on_path(0, 750, 180, FORW);
         phase = 5;
         break;
 
@@ -123,11 +123,21 @@ int main(int argc, char **argv)
         break;
 
       case 6:
+        move_on_path(0, 0, 0, BACW);
+        phase = 7;
+        break;
+
+      case 7:
+        if (!get_movement_status())
+          phase = 99;
+        break;
+
+      case 99:
         break_controller = true;
         break;
       }
 
-    if (break_controller) // i >= sizeof(targets) / sizeof(target) ||
+    if (break_controller) // i >= sizeof(targets) / sizeof(target)
     {
       left_motor->setVelocity(0);
       right_motor->setVelocity(0);

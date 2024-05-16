@@ -15,8 +15,8 @@
 #define BEZIER_RESOLUTION 1000
 #define POINT_DISTANCE 60
 
-#define OFFS_ROBOT 600
-#define OFFS_DESIRED 600
+#define OFFS_ROBOT 520
+#define OFFS_DESIRED 520
 
 #define FORW 0
 #define BACW 1

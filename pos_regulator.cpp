@@ -89,8 +89,10 @@ void follow_curve()
         normalize_angle(&error_phi_prim);
         // vel_ref = bezier_distance_loop.calculate_zero(distance);
         vel_ref = 0.08 * distance;
+        saturation(&vel_ref, 10, -10);
         // ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
         ang_vel_ref = 1.0 * error_phi_prim;
+        saturation(&ang_vel_ref, 72, -72);
         // std::cout << "cur_dis_error    =  " << cur_dis_error << "  mm" << std::endl;
 
         if (cur_dis_error_projected < 0)
@@ -123,9 +125,11 @@ void follow_curve()
         error_phi = atan2(get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y, get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * 180 / M_PI + get_dir() * 180 - get_robot().get_position().phi;
         normalize_angle(&error_phi);
 
-        cur_dis_error = (get_dir() * (-2) + 1) * sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
+        cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim * M_PI / 180);
+        // cur_dis_error *= (get_dir() * (-2) + 1);     //ovo ne treba
         vel_ref = 0.08 * distance * cur_dis_error;
+        saturation(&vel_ref, 10, -10);
         // vel_ref = 6;
         // vel_ref = distance_loop.calculate_zero(cur_dis_error + 100);        // dodaj jedan if sa ovako necim, samo ne budz
 
@@ -136,7 +140,9 @@ void follow_curve()
 
         error_phi_final = t * error_phi_prim + (1 - t) * error_phi;
 
-        ang_vel_ref = angle_loop.calculate_zero(error_phi_final);
+        // ang_vel_ref = angle_loop.calculate_zero(error_phi_final);
+        ang_vel_ref = 1.0 * error_phi_final;
+        saturation(&ang_vel_ref, 72, -72);
 
         if (cur_dis_error_projected < 0)
         {
@@ -180,6 +186,7 @@ static void rotate()
     normalize_angle(&error_phi);
     vel_ref = 0;
     ang_vel_ref = 1.0 * error_phi;
+    saturation(&ang_vel_ref, 72, -72);
     if (fabs(error_phi) < PHI_LIMIT)
     {
         vel_ref = 0;
@@ -201,6 +208,7 @@ static void go_to_xy()
     case 0: // rot2pos
         vel_ref = 0;
         ang_vel_ref = 1.0 * error_phi_prim;
+        saturation(&ang_vel_ref, 72, -72);
         if (fabs(error_phi_prim) < PHI_PRIM_LIMIT)
             phase = 1;
         break;
@@ -211,10 +219,12 @@ static void go_to_xy()
             vel_ref = -0.08 * distance;
         else
             vel_ref = 0.08 * distance;
+        saturation(&vel_ref, 10, -10);
         if (fabs(distance) > DISTANCE_LIMIT2)
             ang_vel_ref = 1.0 * error_phi_prim;
         else
             ang_vel_ref = 0;
+        saturation(&ang_vel_ref, 72, -72);
         if (fabs(distance) * cos(error_phi_prim) < 0)
         {
             vel_ref = 0;

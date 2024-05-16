@@ -64,7 +64,7 @@ void equ_coords(curve *curve_ptr)
             // std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
         }
     }
-    // cur_dis = sqrt((curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) + (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts].y) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - ccurve_ptr->equ_pts[curve_ptr->num_equ_pts].y));
+    // cur_dis = sqrt((curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) + (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts].y) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts].y));
     // curve_ptr->num_equ_pts++;
     curve_ptr->equ_pts[curve_ptr->num_equ_pts] = curve_ptr->pts[BEZIER_RESOLUTION - 1];
     // std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
