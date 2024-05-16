@@ -31,6 +31,7 @@ curve *curve_ptr;
 
 static int phase = 0;
 target desired_position;
+int dir;
 
 int main(int argc, char **argv)
 {
@@ -50,70 +51,26 @@ int main(int argc, char **argv)
 
   while (my_robot->step(1) != -1)
   {
+    // INIT
     if (!init)
     {
       init = true;
       robot_obj.set_prev(right_passive->getValue(), left_passive->getValue());
     }
+    // END_INIT
+
+    // TIMER_ISR
     robot_obj.update_odom(right_passive->getValue(), left_passive->getValue());
 
     counter++;
     if (!(counter % position_prescaler))
     {
       counter = 1;
-      // simple_move(desired_position);
-      switch (phase)
-      {
-      case 0:
-        curve_ptr = (curve *)malloc(sizeof(curve));
-        create_curve(curve_ptr, create_target(-1250, 750, 180));
-
-        phase = 1;
-        break;
-
-      case 1:
-        current_task_status = follow_curve(curve_ptr);
-        if (current_task_status.finished)
-        {
-          phase = 20;
-          std::cout << "target 1 reached" << std::endl;
-        }
-        break;
-
-      case 20:
-        break_controller = true;
-        break;
-
-        // case 4:
-        //   set_reg_type(1);
-        //   if (calculate(robot_obj.get_x(), robot_obj.get_y(), robot_obj.get_phi(), 1250, 750, 0, robot_obj.get_not_moving()))
-        //     phase++;
-        //   break;
-
-        case 5:
-          move_to_xy(-1250,750);
-          phase = 6;
-          break;
-
-        case 6:
-          if (!get_movement_status())
-            phase = 7;
-          break;
-
-        case 7:
-          rotate_to_angle(180);
-          phase = 8;
-          break;
-
-        case 8:
-          if (!get_movement_status())break_controller = true;
-          break;
-      }
-
+      move();
       // vel_ref = get_vel_ref();
       // ang_vel_ref = get_ang_vel_ref();
-      acc_ramp(&vel_ref, get_vel_ref(), 0.8);
-      acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 10);
+      acc_ramp(&vel_ref, get_vel_ref(), 0.2);
+      acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 2.4);
 
       // std::cout << "vel_ref  =  " << vel_ref << "                 ang_vel_ref  =  " << ang_vel_ref << std::endl;
     }
@@ -130,6 +87,45 @@ int main(int argc, char **argv)
 
     right_motor->setVelocity(ang_vel_right);
     left_motor->setVelocity(ang_vel_left);
+    // END_TIMER_ISR
+
+    // MAIN
+    switch (phase)
+      {
+      case 0:
+        move_on_path(-1250, -750, 0, BACW);
+        phase = 1;
+        break;
+
+      case 1:
+        if (!get_movement_status())
+          phase = 2;
+        break;
+
+      case 2:
+        move_to_xy(750,-750, FORW);
+        phase = 3;
+        break;
+
+      case 3:
+        if (!get_movement_status())
+          phase = 4;
+        break;
+
+      case 4:
+        move_on_path(0, 0, 180, FORW);
+        phase = 5;
+        break;
+
+      case 5:
+        if (!get_movement_status())
+          phase = 6;
+        break;
+
+      case 6:
+        break_controller = true;
+        break;
+      }
 
     if (break_controller) // i >= sizeof(targets) / sizeof(target) ||
     {
@@ -141,6 +137,7 @@ int main(int argc, char **argv)
       std::cout << "time = " << my_robot->getTime() << std::endl;
       break;
     }
+      // END_MAIN
   };
 
   delete my_robot;
@@ -152,17 +149,42 @@ MyRobot get_robot()
   return robot_obj;
 }
 
-void move_to_xy (double x, double y)
+target get_desired()
 {
-  movement_started();
-  set_reg_type(1);
+  return desired_position;
+}
+
+void set_desired_x(double x)
+{
   desired_position.x = x;
+}
+
+void set_desired_y(double y)
+{
   desired_position.y = y;
 }
 
-void rotate_to_angle (double phi)
+void set_desired_phi(double phi)
 {
-  movement_started();
-  set_reg_type(-1);
   desired_position.phi = phi;
+}
+
+void set_dir(int tran_dir)
+{
+  dir = tran_dir;
+}
+
+int get_dir()
+{
+  return dir;
+}
+
+curve *get_curve_ptr()
+{
+  return curve_ptr;
+}
+
+void set_curve_ptr(curve *ptr)
+{
+  curve_ptr = ptr;
 }

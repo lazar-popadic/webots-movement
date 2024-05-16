@@ -53,29 +53,30 @@ static void go_to_xy();
 task status;
 bool movement_status;
 
-task follow_curve(curve *curve_ptr)
+void follow_curve()
 {
     switch (phase)
     {
     case 0: // curve
         status.finished = false;
         status.success = false;
-        cur_error.x = curve_ptr->equ_pts[curve_cnt].x - get_robot().get_position().x;
-        cur_error.y = curve_ptr->equ_pts[curve_cnt].y - get_robot().get_position().y;
-        next_error.x = curve_ptr->equ_pts[curve_cnt + 1].x - get_robot().get_position().x;
-        next_error.y = curve_ptr->equ_pts[curve_cnt + 1].y - get_robot().get_position().y;
+        cur_error.x = get_curve_ptr()->equ_pts[curve_cnt].x - get_robot().get_position().x;
+        cur_error.y = get_curve_ptr()->equ_pts[curve_cnt].y - get_robot().get_position().y;
+        next_error.x = get_curve_ptr()->equ_pts[curve_cnt + 1].x - get_robot().get_position().x;
+        next_error.y = get_curve_ptr()->equ_pts[curve_cnt + 1].y - get_robot().get_position().y;
 
-        error_phi_prim_1 = atan2(cur_error.y, cur_error.x) * 180 / M_PI - get_robot().get_position().phi;
-        error_phi_prim_2 = atan2(next_error.y, next_error.x) * 180 / M_PI - get_robot().get_position().phi;
+        error_phi_prim_1 = atan2(cur_error.y, cur_error.x) * 180 / M_PI + get_dir() * 180 - get_robot().get_position().phi;
+        error_phi_prim_2 = atan2(next_error.y, next_error.x) * 180 / M_PI + get_dir() * 180 - get_robot().get_position().phi;
         normalize_angle(&error_phi_prim_1);
         normalize_angle(&error_phi_prim_2);
 
-        distance = curve_ptr->dis - curve_cnt * POINT_DISTANCE;
+        distance = get_curve_ptr()->dis - curve_cnt * POINT_DISTANCE;
+        distance *= (get_dir() * (-2) + 1);
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim_1 * M_PI / 180);
 
         // if (curve_cnt != curve_ptr->num_equ_pts)
-            t = cur_dis_error_projected / POINT_DISTANCE;
+        t = cur_dis_error_projected / POINT_DISTANCE;
         // else
         // {
         //     cur_segment_len = sqrt((curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) * (curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) + (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y) * (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y));
@@ -94,9 +95,9 @@ task follow_curve(curve *curve_ptr)
 
         if (cur_dis_error_projected < 0)
         {
-            error_sum += fabs(cur_dis_error * cos(error_phi_prim_1 * M_PI / 180));
+            // error_sum += fabs(cur_dis_error * cos(error_phi_prim_1 * M_PI / 180));
             curve_cnt++;
-            if (curve_cnt == curve_ptr->num_equ_pts)
+            if (curve_cnt == get_curve_ptr()->num_equ_pts)
             {
                 phase = 1;
                 curve_cnt = 0;
@@ -114,22 +115,22 @@ task follow_curve(curve *curve_ptr)
         break;
 
     case 1: // ending
-        cur_error.x = curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - get_robot().get_position().x;
-        cur_error.y = curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - get_robot().get_position().y;
+        cur_error.x = get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_robot().get_position().x;
+        cur_error.y = get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_robot().get_position().y;
 
-        error_phi_prim = atan2(cur_error.y, cur_error.x) * 180 / M_PI - get_robot().get_position().phi;
+        error_phi_prim = atan2(cur_error.y, cur_error.x) * 180 / M_PI + get_dir() * 180 - get_robot().get_position().phi;
         normalize_angle(&error_phi_prim);
-        error_phi = atan2(curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].y, curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].x) * 180 / M_PI - get_robot().get_position().phi;
+        error_phi = atan2(get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y, get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * 180 / M_PI + get_dir() * 180 - get_robot().get_position().phi;
         normalize_angle(&error_phi);
 
-        cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
+        cur_dis_error = (get_dir() * (-2) + 1) * sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim * M_PI / 180);
-        vel_ref = distance_loop.calculate_zero(cur_dis_error);
+        vel_ref = 0.08 * distance * cur_dis_error;
         // vel_ref = 6;
         // vel_ref = distance_loop.calculate_zero(cur_dis_error + 100);        // dodaj jedan if sa ovako necim, samo ne budz
 
         // t = cur_dis_error_projected / POINT_DISTANCE;
-        cur_segment_len = sqrt((curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].x) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].x) + (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].y) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].y));
+        cur_segment_len = sqrt((get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) + (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y));
         t = cur_dis_error_projected / cur_segment_len;
         saturation(&t, 1, 0);
 
@@ -139,67 +140,62 @@ task follow_curve(curve *curve_ptr)
 
         if (cur_dis_error_projected < 0)
         {
-            error_sum += fabs(cur_dis_error * cos(error_phi_prim * M_PI / 180));
+            // error_sum += fabs(cur_dis_error * cos(error_phi_prim * M_PI / 180));
             status.finished = true;
             // if (cur_dis_error > POINT_DISTANCE * 1.2)
             //     status.success = false;
             // else
-                status.success = true;
+            status.success = true;
             phase = 0;
+            movement_finished();
 
             // std::cout << "error_sum    =  " << error_sum << "  mm" << std::endl;
-            free(curve_ptr->equ_pts);
-            free(curve_ptr);
+            free(get_curve_ptr()->equ_pts);
+            free(get_curve_ptr());
             // std::cout << "memory has been freed" << std::endl;
         }
         break;
     }
-
-    return status;
 }
 
-// task move_to_xy(double desired_x, double desired_y)
-// {
-//     set_reg_type(1);
-
-// }
-
-void simple_move(target desired)
+void move()
 {
-    done = false;
-    error_x = desired.x - get_robot().get_position().x;
-    error_y = desired.y - get_robot().get_position().y;
-    error_phi = desired.phi - get_robot().get_position().phi;
-    error_phi_prim = atan2(error_y, error_x) * 180 / M_PI - get_robot().get_position().phi;
-    normalize_angle(&error_phi);
-    normalize_angle(&error_phi_prim);
-    distance = sqrt(error_x * error_x + error_y * error_y);
     switch (reg_type)
     {
-    case -1: // rotate
+    case -1:
         rotate();
         break;
-    case 1: // go_to_xy
+    case 1:
         go_to_xy();
+        break;
+    case 2:
+        follow_curve();
         break;
     }
 }
 
 static void rotate()
 {
+    error_phi = get_desired().phi - get_robot().get_position().phi;
+    normalize_angle(&error_phi);
     vel_ref = 0;
     ang_vel_ref = 1.0 * error_phi;
     if (fabs(error_phi) < PHI_LIMIT)
     {
         vel_ref = 0;
         ang_vel_ref = 0;
-        reg_type = 0;
+        set_reg_type(0);
         movement_finished();
     }
 }
 
 static void go_to_xy()
 {
+    error_x = get_desired().x - get_robot().get_position().x;
+    error_y = get_desired().y - get_robot().get_position().y;
+    error_phi_prim = atan2(error_y, error_x) * 180 / M_PI + get_dir() * 180 - get_robot().get_position().phi;
+    normalize_angle(&error_phi_prim);
+
     switch (phase)
     {
     case 0: // rot2pos
@@ -210,20 +206,20 @@ static void go_to_xy()
         break;
 
     case 1: // tran
+        distance = (get_dir() * (-2) + 1) * sqrt(error_x * error_x + error_y * error_y);
         if (fabs(error_phi_prim) > 90)
-            vel_ref = - 0.08 * distance;
+            vel_ref = -0.08 * distance;
         else
             vel_ref = 0.08 * distance;
         if (fabs(distance) > DISTANCE_LIMIT2)
             ang_vel_ref = 1.0 * error_phi_prim;
         else
             ang_vel_ref = 0;
-        if (distance * cos(error_phi_prim) < 0)
+        if (fabs(distance) * cos(error_phi_prim) < 0)
         {
             vel_ref = 0;
             ang_vel_ref = 0;
             phase = 0;
-            reg_type = 0;
             movement_finished();
         }
         break;
@@ -309,4 +305,46 @@ void movement_finished()
 bool get_movement_status()
 {
     return movement_status;
+}
+
+void move_to_xy (double x, double y, int dir)
+{
+  movement_started();
+  set_reg_type(1);
+  set_desired_x (x);
+  set_desired_y (y);
+  set_dir(dir);
+}
+
+void rot_to_angle (double phi)
+{
+  movement_started();
+  set_reg_type(-1);
+  set_desired_phi(phi);
+}
+
+void move_on_dir (double distance, int dir)
+{
+  movement_started();
+  set_reg_type(1);
+  set_desired_x (get_robot().get_position().x + (dir * (-2) + 1) * distance * cos (get_robot().get_position().phi * M_PI / 180));
+  set_desired_y (get_robot().get_position().y + (dir * (-2) + 1) * distance * sin (get_robot().get_position().phi * M_PI / 180));
+  set_dir(dir);
+}
+
+void rot_to_xy (double x, double y, int dir)
+{
+  movement_started();
+  set_reg_type(-1);
+  set_desired_phi(atan2(y - get_robot().get_position().y, x - get_robot().get_position().x) * 180 / M_PI + dir * 180);
+  set_dir(dir);
+}
+
+void move_on_path (double x, double y, double phi, int dir)
+{
+    movement_started();
+    set_reg_type(2);
+    set_curve_ptr((curve *)malloc(sizeof(curve)));
+    create_curve(get_curve_ptr(), create_target(x, y, phi), dir);
+    set_dir(dir);
 }

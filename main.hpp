@@ -18,6 +18,9 @@
 #define OFFS_ROBOT 600
 #define OFFS_DESIRED 600
 
+#define FORW 0
+#define BACW 1
+
 using namespace webots;
 
 typedef struct
@@ -29,15 +32,15 @@ typedef struct
 typedef struct
 {
     coord pts[BEZIER_RESOLUTION];
-    coord* equ_pts;
+    coord *equ_pts;
     int num_equ_pts;
     double dis;
 } curve;
 
 typedef struct
 {
-    int8_t  finished:   1;
-    int8_t  success:    1;
+    int8_t finished : 1;
+    int8_t success : 1;
 } task;
 
 double get_ang_vel_ref();
@@ -52,17 +55,28 @@ int sign(double signal);
 
 target create_target(double x, double y, double phi);
 
-void create_curve(curve *curve_ptr, target desired_position);
+void create_curve(curve *curve_ptr, target desired_position, int dir);
 void cubic_bezier_pts(curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
 void equ_coords(curve *curve_ptr);
 MyRobot get_robot();
-task follow_curve(curve *curve_ptr);
+void follow_curve();
+void set_curve_ptr(curve* ptr);
+curve* get_curve_ptr();
+void move_on_path (double x, double y, double phi, int dir);
 
-void simple_move(target desired);
-void move_to_xy (double x, double y);
-void rotate_to_angle (double phi);
+void move();
+void move_to_xy(double x, double y, int dir);
+void rot_to_angle(double phi);
+void move_on_dir(double distance, int dir);
+void rot_to_xy(double x, double y, int dir);
 bool get_movement_status();
 void movement_finished();
 void movement_started();
+target get_desired();
+void set_desired_x(double x);
+void set_desired_y(double y);
+void set_desired_phi(double phi);
+void set_dir(int tran_dir);
+int get_dir();
 
 #endif /* __MAIN_HPP */

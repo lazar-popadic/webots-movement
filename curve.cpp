@@ -1,6 +1,6 @@
 #include "main.hpp"
 
-void create_curve(curve *curve_ptr, target desired_position)
+void create_curve(curve *curve_ptr, target desired_position, int dir)
 {
     target robot_position = get_robot().get_position();
     static coord p0;
@@ -12,11 +12,11 @@ void create_curve(curve *curve_ptr, target desired_position)
     p0.x = robot_position.x;
     p0.y = robot_position.y;
 
-    p1.x = robot_position.x + OFFS_ROBOT * cos(robot_position.phi / 180 * M_PI);
-    p1.y = robot_position.y + OFFS_ROBOT * sin(robot_position.phi / 180 * M_PI);
+    p1.x = robot_position.x + OFFS_ROBOT * cos((robot_position.phi / 180 + dir) * M_PI);
+    p1.y = robot_position.y + OFFS_ROBOT * sin((robot_position.phi / 180 + dir)  * M_PI);
 
-    p2.x = desired_position.x - OFFS_DESIRED * cos(desired_position.phi / 180 * M_PI);
-    p2.y = desired_position.y - OFFS_DESIRED * sin(desired_position.phi / 180 * M_PI);
+    p2.x = desired_position.x - OFFS_DESIRED * cos((desired_position.phi / 180 + dir) * M_PI);
+    p2.y = desired_position.y - OFFS_DESIRED * sin((desired_position.phi / 180 + dir) * M_PI);
 
     p3.x = desired_position.x;
     p3.y = desired_position.y;
