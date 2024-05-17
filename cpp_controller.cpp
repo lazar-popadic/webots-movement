@@ -23,6 +23,8 @@ bool break_controller = false;
 
 PID vel_loop(1.0, 1.0, 0.1, 12);
 PID ang_vel_loop(0.1, 0.1, 0.0042, 12);
+pid ang_vel_loop_2;
+pid vel_loop_2;
 
 MyRobot robot_obj(0.0, 0.0, 0.0);
 task current_task_status;
@@ -48,6 +50,10 @@ int main(int argc, char **argv)
   right_motor->setVelocity(0);
   right_passive->enable(1);
   left_passive->enable(1);
+
+  init_pid(&ang_vel_loop_2, 0.1, 0.1, 0.0042, 12, 12);
+  init_pid(&vel_loop_2, 1.0, 1.0, 0.1, 12, 12);
+  pid_init();
 
   while (my_robot->step(1) != -1)
   {
@@ -77,8 +83,10 @@ int main(int argc, char **argv)
 
     robot_obj.is_moving(VEL_LIMIT, ANG_VEL_LIMIT);
 
-    ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
-    vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
+    // ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
+    ang_vel_control = calculate2(&ang_vel_loop_2, ang_vel_ref, robot_obj.get_ang_vel());
+    // vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
+    vel_control = calculate2(&vel_loop_2, vel_ref, robot_obj.get_vel());
 
     ang_vel_right = vel_control + ang_vel_control;
     ang_vel_left = vel_control - ang_vel_control;
@@ -91,51 +99,61 @@ int main(int argc, char **argv)
 
     // MAIN
     switch (phase)
-      {
-      case 0:
-        move_on_path(0, -750, 180, BACW);
-        phase = 1;
-        break;
+    {
+    case 0:
+      move_on_path(0, -750, 180, BACW);
+      phase = 1;
+      break;
 
-      case 1:
-        if (!get_movement_status())
-          phase = 2;
-        break;
+    case 1:
+      if (!get_movement_status())
+        phase = 2;
+      break;
 
-      case 2:
-        move_on_path(0, 0, 0, FORW);
-        phase = 3;
-        break;
+    case 2:
+      move_on_path(0, 0, 0, FORW);
+      phase = 3;
+      break;
 
-      case 3:
-        if (!get_movement_status())
-          phase = 4;
-        break;
+    case 3:
+      if (!get_movement_status())
+        phase = 4;
+      break;
 
-      case 4:
-        move_on_path(0, 750, 180, FORW);
-        phase = 5;
-        break;
+    case 4:
+      move_on_path(0, 750, 180, FORW);
+      phase = 5;
+      break;
 
-      case 5:
-        if (!get_movement_status())
-          phase = 6;
-        break;
+    case 5:
+      if (!get_movement_status())
+        phase = 6;
+      break;
 
-      case 6:
-        move_on_path(0, 0, 0, BACW);
-        phase = 7;
-        break;
+    case 6:
+      move_on_path(0, 0, 0, BACW);
+      phase = 7;
+      break;
 
-      case 7:
-        if (!get_movement_status())
-          phase = 99;
-        break;
+    case 7:
+      if (!get_movement_status())
+        phase = 8;
+      break;
 
-      case 99:
-        break_controller = true;
-        break;
-      }
+    case 8:
+      move_to_xy(1250, -750, BACW);
+      phase = 9;
+      break;
+
+    case 9:
+      if (!get_movement_status())
+        phase = 99;
+      break;
+
+    case 99:
+      break_controller = true;
+      break;
+    }
 
     if (break_controller) // i >= sizeof(targets) / sizeof(target)
     {
@@ -147,7 +165,7 @@ int main(int argc, char **argv)
       std::cout << "time = " << my_robot->getTime() << std::endl;
       break;
     }
-      // END_MAIN
+    // END_MAIN
   };
 
   delete my_robot;

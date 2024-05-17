@@ -65,7 +65,7 @@
 ###
 ###-----------------------------------------------------------------------------
 
-CXX_SOURCES = cpp_controller.cpp pos_regulator.cpp curve.cpp
+CXX_SOURCES = cpp_controller.cpp pos_regulator.cpp curve.cpp pid.cpp
 
 ### Do not modify: this includes Webots global Makefile.include
 null :=

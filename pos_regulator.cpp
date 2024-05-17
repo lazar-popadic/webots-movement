@@ -45,6 +45,16 @@ PID angle_loop(1.0, 0.0, 0.0, 72);
 // PID bezier_angle_loop(2.0, 0.02, 0.08, 72);
 PID bezier_distance_loop(0.004, 0.0, 0.0, 10);
 PID bezier_angle_loop(2.0, 0.0, 0.0, 72);
+
+pid dist_loop;
+pid ang_loop;
+
+void pid_init()
+{
+    init_pid(&dist_loop, 0.08, 0.0, 0.0, 10, 10);
+    init_pid(&ang_loop, 1.0, 0.0, 0.0, 72, 72);
+}
+
 double bezier_distance = 0;
 
 static void rotate();
@@ -88,11 +98,13 @@ void follow_curve()
         error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
         normalize_angle(&error_phi_prim);
         // vel_ref = bezier_distance_loop.calculate_zero(distance);
-        vel_ref = 0.08 * distance;
-        saturation(&vel_ref, 10, -10);
+        // vel_ref = 0.08 * distance;
+        // saturation(&vel_ref, 10, -10);
+        vel_ref = calculate(&dist_loop, distance);
         // ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
-        ang_vel_ref = 1.0 * error_phi_prim;
-        saturation(&ang_vel_ref, 72, -72);
+        // ang_vel_ref = 1.0 * error_phi_prim;
+        // saturation(&ang_vel_ref, 72, -72);
+        ang_vel_ref = calculate(&ang_loop, error_phi_prim);
         // std::cout << "cur_dis_error    =  " << cur_dis_error << "  mm" << std::endl;
 
         if (cur_dis_error_projected < 0)
@@ -128,8 +140,13 @@ void follow_curve()
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim * M_PI / 180);
         // cur_dis_error *= (get_dir() * (-2) + 1);     //ovo ne treba
-        vel_ref = 0.08 * distance * cur_dis_error;
-        saturation(&vel_ref, 10, -10);
+        // vel_ref = 0.08 * distance * cur_dis_error;
+        // saturation(&vel_ref, 10, -10);
+        vel_ref = (get_dir() * (-2) + 1) * calculate(&dist_loop, cur_dis_error_projected);
+        // std::cout << "distance    =  " << distance << "  mm" << std::endl;
+        // std::cout << "cur_dis_error    =  " << cur_dis_error << "  mm" << std::endl;
+        // std::cout << "cos(error_phi_prim * M_PI / 180)    =  " << cos(error_phi_prim * M_PI / 180) << "  mm" << std::endl;
+        // std::cout << "cur_dis_error_projected    =  " << cur_dis_error_projected << "  mm" << std::endl;
         // vel_ref = 6;
         // vel_ref = distance_loop.calculate_zero(cur_dis_error + 100);        // dodaj jedan if sa ovako necim, samo ne budz
 
@@ -141,8 +158,9 @@ void follow_curve()
         error_phi_final = t * error_phi_prim + (1 - t) * error_phi;
 
         // ang_vel_ref = angle_loop.calculate_zero(error_phi_final);
-        ang_vel_ref = 1.0 * error_phi_final;
-        saturation(&ang_vel_ref, 72, -72);
+        // ang_vel_ref = 1.0 * error_phi_final;
+        // saturation(&ang_vel_ref, 72, -72);
+        ang_vel_ref = calculate(&ang_loop, error_phi_final);
 
         if (cur_dis_error_projected < 0)
         {
@@ -185,8 +203,9 @@ static void rotate()
     error_phi = get_desired().phi - get_robot().get_position().phi;
     normalize_angle(&error_phi);
     vel_ref = 0;
-    ang_vel_ref = 1.0 * error_phi;
-    saturation(&ang_vel_ref, 72, -72);
+    // ang_vel_ref = 1.0 * error_phi;
+    ang_vel_ref = calculate(&ang_loop, error_phi);
+    // saturation(&ang_vel_ref, 72, -72);
     if (fabs(error_phi) < PHI_LIMIT)
     {
         vel_ref = 0;
@@ -207,24 +226,24 @@ static void go_to_xy()
     {
     case 0: // rot2pos
         vel_ref = 0;
-        ang_vel_ref = 1.0 * error_phi_prim;
-        saturation(&ang_vel_ref, 72, -72);
+        // ang_vel_ref = 1.0 * error_phi_prim;
+        ang_vel_ref = calculate(&ang_loop, error_phi_prim);
+        // saturation(&ang_vel_ref, 72, -72);
         if (fabs(error_phi_prim) < PHI_PRIM_LIMIT)
             phase = 1;
         break;
 
     case 1: // tran
         distance = (get_dir() * (-2) + 1) * sqrt(error_x * error_x + error_y * error_y);
-        if (fabs(error_phi_prim) > 90)
-            vel_ref = -0.08 * distance;
+        if (fabs(error_phi_prim) > 90)      // TODO: mozda bi ovde bilo dobro da mnozim sa kosinusom. mozda moze i bez faza, samo da uvek mnozim sa kosinusom
+            vel_ref = - calculate(&dist_loop, distance);
         else
-            vel_ref = 0.08 * distance;
-        saturation(&vel_ref, 10, -10);
+            vel_ref = calculate(&dist_loop, distance);
+        // saturation(&vel_ref, 10, -10);
         if (fabs(distance) > DISTANCE_LIMIT2)
-            ang_vel_ref = 1.0 * error_phi_prim;
+            ang_vel_ref = calculate(&ang_loop, error_phi_prim);
         else
             ang_vel_ref = 0;
-        saturation(&ang_vel_ref, 72, -72);
         if (fabs(distance) * cos(error_phi_prim) < 0)
         {
             vel_ref = 0;
@@ -317,40 +336,40 @@ bool get_movement_status()
     return movement_status;
 }
 
-void move_to_xy (double x, double y, int dir)
+void move_to_xy(double x, double y, int dir)
 {
-  movement_started();
-  set_reg_type(1);
-  set_desired_x (x);
-  set_desired_y (y);
-  set_dir(dir);
+    movement_started();
+    set_reg_type(1);
+    set_desired_x(x);
+    set_desired_y(y);
+    set_dir(dir);
 }
 
-void rot_to_angle (double phi)
+void rot_to_angle(double phi)
 {
-  movement_started();
-  set_reg_type(-1);
-  set_desired_phi(phi);
+    movement_started();
+    set_reg_type(-1);
+    set_desired_phi(phi);
 }
 
-void move_on_dir (double distance, int dir)
+void move_on_dir(double distance, int dir)
 {
-  movement_started();
-  set_reg_type(1);
-  set_desired_x (get_robot().get_position().x + (dir * (-2) + 1) * distance * cos (get_robot().get_position().phi * M_PI / 180));
-  set_desired_y (get_robot().get_position().y + (dir * (-2) + 1) * distance * sin (get_robot().get_position().phi * M_PI / 180));
-  set_dir(dir);
+    movement_started();
+    set_reg_type(1);
+    set_desired_x(get_robot().get_position().x + (dir * (-2) + 1) * distance * cos(get_robot().get_position().phi * M_PI / 180));
+    set_desired_y(get_robot().get_position().y + (dir * (-2) + 1) * distance * sin(get_robot().get_position().phi * M_PI / 180));
+    set_dir(dir);
 }
 
-void rot_to_xy (double x, double y, int dir)
+void rot_to_xy(double x, double y, int dir)
 {
-  movement_started();
-  set_reg_type(-1);
-  set_desired_phi(atan2(y - get_robot().get_position().y, x - get_robot().get_position().x) * 180 / M_PI + dir * 180);
-  set_dir(dir);
+    movement_started();
+    set_reg_type(-1);
+    set_desired_phi(atan2(y - get_robot().get_position().y, x - get_robot().get_position().x) * 180 / M_PI + dir * 180);
+    set_dir(dir);
 }
 
-void move_on_path (double x, double y, double phi, int dir)
+void move_on_path(double x, double y, double phi, int dir)
 {
     movement_started();
     set_reg_type(2);

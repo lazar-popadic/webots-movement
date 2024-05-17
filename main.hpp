@@ -4,11 +4,11 @@
 #include <webots/Robot.hpp>
 #include <webots/Motor.hpp>
 #include <webots/PositionSensor.hpp>
+#include <math.h>
 #include <cmath>
 #include "MyRobot.hpp"
 #include "pid.hpp"
 #include <vector>
-#include <math.h>
 
 #define VEL_LIMIT 0.001
 #define ANG_VEL_LIMIT 0.012
@@ -42,6 +42,21 @@ typedef struct
     int8_t finished : 1;
     int8_t success : 1;
 } task;
+
+typedef struct
+{
+    double p;
+    double i;
+    double d;
+    double lmt;
+    double ctrl;
+    double ctrl_p;
+    double ctrl_pp;
+    double err_p;
+    double err_sum;
+    double err_dif;
+    double sum_lmt;
+}pid;
 
 double get_ang_vel_ref();
 double get_vel_ref();
@@ -78,5 +93,10 @@ void set_desired_y(double y);
 void set_desired_phi(double phi);
 void set_dir(int tran_dir);
 int get_dir();
+
+double calculate(pid* pid_ptr, double err);
+double calculate2(pid *pid_ptr, double ref, double val);
+void init_pid(pid* pid_ptr, double p, double i, double d, double limit, double sum_limit);
+void pid_init();
 
 #endif /* __MAIN_HPP */
