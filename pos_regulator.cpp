@@ -38,21 +38,22 @@ int8_t phase = 0;
 
 // PID distance_loop(0.16, 0.04, 0.0, 10);
 // PID angle_loop(2.5, 0.56, 0.0, 72);
-PID distance_loop(0.1, 0.0, 0.0, 10);
-PID angle_loop(1.0, 0.0, 0.0, 72);
+// PID distance_loop(0.1, 0.0, 0.0, 10);
+// PID angle_loop(1.0, 0.0, 0.0, 72);
 
 // PID bezier_distance_loop(0.16, 0.04, 0.0, 10);
 // PID bezier_angle_loop(2.0, 0.02, 0.08, 72);
-PID bezier_distance_loop(0.004, 0.0, 0.0, 10);
-PID bezier_angle_loop(2.0, 0.0, 0.0, 72);
+// PID bezier_distance_loop(0.004, 0.0, 0.0, 10);
+// PID bezier_angle_loop(2.0, 0.0, 0.0, 72);
 
 pid dist_loop;
 pid ang_loop;
+bool cont_move;
 
 void pid_init()
 {
-    init_pid(&dist_loop, 0.08, 0.0, 0.0, 10, 10);
-    init_pid(&ang_loop, 1.0, 0.0, 0.0, 72, 72);
+    init_pid(&dist_loop, 0.08, 0.0, 0.0, 4, 4);
+    init_pid(&ang_loop, 1.0, 0.0, 0.0, 45, 45);
 }
 
 double bezier_distance = 0;
@@ -85,31 +86,16 @@ void follow_curve()
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim_1 * M_PI / 180);
 
-        // if (curve_cnt != curve_ptr->num_equ_pts)
         t = cur_dis_error_projected / POINT_DISTANCE;
-        // else
-        // {
-        //     cur_segment_len = sqrt((curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) * (curve_ptr->equ_pts[curve_cnt].x - curve_ptr->equ_pts[curve_cnt - 1].x) + (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y) * (curve_ptr->equ_pts[curve_cnt].y - curve_ptr->equ_pts[curve_cnt - 1].y));
-        //     t = cur_dis_error_projected / cur_segment_len;
-        // }
         saturation(&t, 1, 0);
-        // t = 1 / ( 1 + exp ( -10 * ( t - 0.5 ) ) );   // losije je sa ovim
 
         error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
         normalize_angle(&error_phi_prim);
-        // vel_ref = bezier_distance_loop.calculate_zero(distance);
-        // vel_ref = 0.08 * distance;
-        // saturation(&vel_ref, 10, -10);
         vel_ref = calculate(&dist_loop, distance);
-        // ang_vel_ref = bezier_angle_loop.calculate_zero(error_phi_prim);
-        // ang_vel_ref = 1.0 * error_phi_prim;
-        // saturation(&ang_vel_ref, 72, -72);
         ang_vel_ref = calculate(&ang_loop, error_phi_prim);
-        // std::cout << "cur_dis_error    =  " << cur_dis_error << "  mm" << std::endl;
 
         if (cur_dis_error_projected < 0)
         {
-            // error_sum += fabs(cur_dis_error * cos(error_phi_prim_1 * M_PI / 180));
             curve_cnt++;
             if (curve_cnt == get_curve_ptr()->num_equ_pts)
             {
@@ -139,44 +125,27 @@ void follow_curve()
 
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim * M_PI / 180);
-        // cur_dis_error *= (get_dir() * (-2) + 1);     //ovo ne treba
-        // vel_ref = 0.08 * distance * cur_dis_error;
-        // saturation(&vel_ref, 10, -10);
-        vel_ref = (get_dir() * (-2) + 1) * calculate(&dist_loop, cur_dis_error_projected);
-        // std::cout << "distance    =  " << distance << "  mm" << std::endl;
-        // std::cout << "cur_dis_error    =  " << cur_dis_error << "  mm" << std::endl;
-        // std::cout << "cos(error_phi_prim * M_PI / 180)    =  " << cos(error_phi_prim * M_PI / 180) << "  mm" << std::endl;
-        // std::cout << "cur_dis_error_projected    =  " << cur_dis_error_projected << "  mm" << std::endl;
-        // vel_ref = 6;
-        // vel_ref = distance_loop.calculate_zero(cur_dis_error + 100);        // dodaj jedan if sa ovako necim, samo ne budz
-
-        // t = cur_dis_error_projected / POINT_DISTANCE;
+        if (cont_move)
+            vel_ref = (get_dir() * (-2) + 1) * get_cruising_vel();
+        else
+            vel_ref = (get_dir() * (-2) + 1) * calculate(&dist_loop, cur_dis_error_projected);
+        // vel_ref = (get_dir() * (-2) + 1) * 12;   // ovako nastavlja kretnju, ali mi prvo treba zadavanje brzine kruziranja
         cur_segment_len = sqrt((get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) + (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y));
         t = cur_dis_error_projected / cur_segment_len;
         saturation(&t, 1, 0);
 
         error_phi_final = t * error_phi_prim + (1 - t) * error_phi;
-
-        // ang_vel_ref = angle_loop.calculate_zero(error_phi_final);
-        // ang_vel_ref = 1.0 * error_phi_final;
-        // saturation(&ang_vel_ref, 72, -72);
         ang_vel_ref = calculate(&ang_loop, error_phi_final);
 
         if (cur_dis_error_projected < 0)
         {
-            // error_sum += fabs(cur_dis_error * cos(error_phi_prim * M_PI / 180));
             status.finished = true;
-            // if (cur_dis_error > POINT_DISTANCE * 1.2)
-            //     status.success = false;
-            // else
             status.success = true;
             phase = 0;
             movement_finished();
 
-            // std::cout << "error_sum    =  " << error_sum << "  mm" << std::endl;
             free(get_curve_ptr()->equ_pts);
             free(get_curve_ptr());
-            // std::cout << "memory has been freed" << std::endl;
         }
         break;
     }
@@ -203,9 +172,7 @@ static void rotate()
     error_phi = get_desired().phi - get_robot().get_position().phi;
     normalize_angle(&error_phi);
     vel_ref = 0;
-    // ang_vel_ref = 1.0 * error_phi;
     ang_vel_ref = calculate(&ang_loop, error_phi);
-    // saturation(&ang_vel_ref, 72, -72);
     if (fabs(error_phi) < PHI_LIMIT)
     {
         vel_ref = 0;
@@ -226,20 +193,18 @@ static void go_to_xy()
     {
     case 0: // rot2pos
         vel_ref = 0;
-        // ang_vel_ref = 1.0 * error_phi_prim;
         ang_vel_ref = calculate(&ang_loop, error_phi_prim);
-        // saturation(&ang_vel_ref, 72, -72);
         if (fabs(error_phi_prim) < PHI_PRIM_LIMIT)
             phase = 1;
         break;
 
     case 1: // tran
         distance = (get_dir() * (-2) + 1) * sqrt(error_x * error_x + error_y * error_y);
-        if (fabs(error_phi_prim) > 90)      // TODO: mozda bi ovde bilo dobro da mnozim sa kosinusom. mozda moze i bez faza, samo da uvek mnozim sa kosinusom
-            vel_ref = - calculate(&dist_loop, distance);
+        if (fabs(error_phi_prim) > 90) // TODO: mozda bi ovde bilo dobro da mnozim sa kosinusom. mozda moze i bez faza, samo da uvek mnozim sa kosinusom
+            vel_ref = -calculate(&dist_loop, distance);
         else
             vel_ref = calculate(&dist_loop, distance);
-        // saturation(&vel_ref, 10, -10);
+        // vel_ref = calculate(&dist_loop, distance* cos(error_phi_prim * M_PI / 180));
         if (fabs(distance) > DISTANCE_LIMIT2)
             ang_vel_ref = calculate(&ang_loop, error_phi_prim);
         else
@@ -329,6 +294,8 @@ void movement_started()
 void movement_finished()
 {
     movement_status = 0;
+    clear_cruising_vel();
+    clear_max_ang_vel();
 }
 
 bool get_movement_status()
@@ -336,44 +303,61 @@ bool get_movement_status()
     return movement_status;
 }
 
-void move_to_xy(double x, double y, int dir)
+void move_to_xy(double x, double y, int dir, double cruising_vel, double max_ang_vel)
 {
     movement_started();
     set_reg_type(1);
     set_desired_x(x);
     set_desired_y(y);
     set_dir(dir);
+    set_cruising_vel(cruising_vel);
+    set_max_ang_vel(max_ang_vel);
 }
 
-void rot_to_angle(double phi)
+void rot_to_angle(double phi, double max_ang_vel)
 {
     movement_started();
     set_reg_type(-1);
     set_desired_phi(phi);
+    set_max_ang_vel(max_ang_vel);
 }
 
-void move_on_dir(double distance, int dir)
+void move_on_dir(double distance, int dir, double cruising_vel)
 {
     movement_started();
     set_reg_type(1);
     set_desired_x(get_robot().get_position().x + (dir * (-2) + 1) * distance * cos(get_robot().get_position().phi * M_PI / 180));
     set_desired_y(get_robot().get_position().y + (dir * (-2) + 1) * distance * sin(get_robot().get_position().phi * M_PI / 180));
     set_dir(dir);
+    set_cruising_vel(cruising_vel);
 }
 
-void rot_to_xy(double x, double y, int dir)
+void rot_to_xy(double x, double y, int dir, double max_ang_vel)
 {
     movement_started();
     set_reg_type(-1);
     set_desired_phi(atan2(y - get_robot().get_position().y, x - get_robot().get_position().x) * 180 / M_PI + dir * 180);
     set_dir(dir);
+    set_max_ang_vel(max_ang_vel);
 }
 
-void move_on_path(double x, double y, double phi, int dir)
+void move_on_path(double x, double y, double phi, int dir, bool cont, double cruising_vel)
 {
     movement_started();
     set_reg_type(2);
     set_curve_ptr((curve *)malloc(sizeof(curve)));
     create_curve(get_curve_ptr(), create_target(x, y, phi), dir);
     set_dir(dir);
+    cont_move = cont;
+    set_cruising_vel(cruising_vel);
+}
+
+double abs_min3(double a, double b, double c)
+{
+    double min = fabs(a);
+    if (fabs(b) < min)
+        min = b;
+    if (fabs(c) < min)
+        min = c;
+    return min;
 }

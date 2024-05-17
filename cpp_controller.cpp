@@ -35,6 +35,9 @@ static int phase = 0;
 target desired_position;
 int dir;
 
+double cruising_vel = 999, max_ang_vel = 999;
+double vel_ramp, ang_vel_ramp;
+
 int main(int argc, char **argv)
 {
   webots::Robot *my_robot = new webots::Robot();
@@ -73,25 +76,26 @@ int main(int argc, char **argv)
     {
       counter = 1;
       move();
-      // vel_ref = get_vel_ref();
-      // ang_vel_ref = get_ang_vel_ref();
-      acc_ramp(&vel_ref, get_vel_ref(), 0.2);
-      acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 2.4);
+      vel_ref = get_vel_ref();
+      ang_vel_ref = get_ang_vel_ref();
+      // acc_ramp(&vel_ref, get_vel_ref(), 0.2);
+      // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 2.4);
+      vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, 999);
+      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, 999);
 
-      // std::cout << "vel_ref  =  " << vel_ref << "       ang_vel_ref  =  " << ang_vel_ref << std::endl;
+      // std::cout << "robot_obj.get_ang_vel()  =  " << robot_obj.get_ang_vel() << std::endl;
     }
 
     robot_obj.is_moving(VEL_LIMIT, ANG_VEL_LIMIT);
 
-    // ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
-    ang_vel_control = calculate2(&ang_vel_loop_2, ang_vel_ref, robot_obj.get_ang_vel());
-    // vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
-    vel_control = calculate2(&vel_loop_2, vel_ref, robot_obj.get_vel());
+    ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
+    vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
+    // ang_vel_control = calculate2(&ang_vel_loop_2, ang_vel_ref, robot_obj.get_ang_vel());
+    // vel_control = calculate2(&vel_loop_2, vel_ref, robot_obj.get_vel());
 
     ang_vel_right = vel_control + ang_vel_control;
     ang_vel_left = vel_control - ang_vel_control;
     scale_vel_ref(&ang_vel_right, &ang_vel_left, 12);
-    // std::cout << "ang_vel_right  =  " << ang_vel_right << "     ang_vel_left  =  " << ang_vel_left << std::endl;
 
     right_motor->setVelocity(ang_vel_right);
     left_motor->setVelocity(ang_vel_left);
@@ -101,7 +105,7 @@ int main(int argc, char **argv)
     switch (phase)
     {
     case 0:
-      move_on_path(0, -750, 180, BACW);
+      move_on_path(0, -500, 180, BACW, true, MAX_VEL);
       phase = 1;
       break;
 
@@ -111,7 +115,7 @@ int main(int argc, char **argv)
       break;
 
     case 2:
-      move_on_path(0, 0, 0, FORW);
+      move_on_path(0, 0, 0, BACW, false, MAX_VEL / 2);
       phase = 3;
       break;
 
@@ -121,7 +125,7 @@ int main(int argc, char **argv)
       break;
 
     case 4:
-      move_on_path(0, 750, 180, FORW);
+      move_on_path(250, -500, 180, FORW, true, MAX_VEL);
       phase = 5;
       break;
 
@@ -131,7 +135,7 @@ int main(int argc, char **argv)
       break;
 
     case 6:
-      move_on_path(0, 0, 0, BACW);
+      move_on_dir(250 * sqrt(2), FORW, MAX_VEL/3);
       phase = 7;
       break;
 
@@ -141,7 +145,7 @@ int main(int argc, char **argv)
       break;
 
     case 8:
-      move_to_xy(1250, -750, BACW);
+      move_on_path(0, 0, 0, FORW, false, MAX_VEL);
       phase = 9;
       break;
 
@@ -215,4 +219,34 @@ curve *get_curve_ptr()
 void set_curve_ptr(curve *ptr)
 {
   curve_ptr = ptr;
+}
+
+void clear_cruising_vel()
+{
+  cruising_vel = 9999;
+}
+
+void clear_max_ang_vel()
+{
+  max_ang_vel = 9999;
+}
+
+void set_cruising_vel(double vel)
+{
+  cruising_vel = vel;
+}
+
+void set_max_ang_vel(double vel)
+{
+  max_ang_vel = vel;
+}
+
+double get_cruising_vel()
+{
+  return cruising_vel;
+}
+
+double get_max_ang_vel()
+{
+  return max_ang_vel;
 }

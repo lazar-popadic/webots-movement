@@ -15,11 +15,14 @@
 #define BEZIER_RESOLUTION 1000
 #define POINT_DISTANCE 60
 
-#define OFFS_ROBOT 520
+#define OFFS_ROBOT 400
 #define OFFS_DESIRED 520
 
 #define FORW 0
 #define BACW 1
+
+#define MAX_VEL 4
+#define MAX_ANG_VEL 40
 
 using namespace webots;
 
@@ -77,13 +80,13 @@ MyRobot get_robot();
 void follow_curve();
 void set_curve_ptr(curve* ptr);
 curve* get_curve_ptr();
-void move_on_path (double x, double y, double phi, int dir);
+void move_on_path(double x, double y, double phi, int dir, bool cont, double cruising_vel);
 
 void move();
-void move_to_xy(double x, double y, int dir);
-void rot_to_angle(double phi);
-void move_on_dir(double distance, int dir);
-void rot_to_xy(double x, double y, int dir);
+void move_to_xy(double x, double y, int dir, double cruising_vel, double max_ang_vel);
+void rot_to_angle(double phi, double max_ang_vel);
+void move_on_dir(double distance, int dir, double cruising_vel);
+void rot_to_xy(double x, double y, int dir, double max_ang_vel);
 bool get_movement_status();
 void movement_finished();
 void movement_started();
@@ -98,5 +101,13 @@ double calculate(pid* pid_ptr, double err);
 double calculate2(pid *pid_ptr, double ref, double val);
 void init_pid(pid* pid_ptr, double p, double i, double d, double limit, double sum_limit);
 void pid_init();
+double abs_min3(double a, double b, double c);
+
+void clear_cruising_vel();
+void clear_max_ang_vel();
+void set_cruising_vel(double vel);
+void set_max_ang_vel(double vel);
+double get_cruising_vel();
+double get_max_ang_vel();
 
 #endif /* __MAIN_HPP */
