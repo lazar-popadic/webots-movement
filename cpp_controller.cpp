@@ -88,8 +88,8 @@ int main(int argc, char **argv)
 
       cur_vel = robot_obj.get_vel();
       cur_ang_vel = robot_obj.get_ang_vel();
-      vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, fabs(vel_s_curve(&cur_vel, prev_vel, vel_ref, 0.04)));
-      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, fabs(vel_s_curve(&cur_ang_vel, prev_ang_vel, ang_vel_ref, 1.2)));
+      vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, fabs(vel_s_curve(&cur_vel, prev_vel, vel_ref, 0.08)));
+      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, fabs(vel_s_curve(&cur_ang_vel, prev_ang_vel, ang_vel_ref, 0.8)));
       // vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, 9999);
       // ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, 9999);
 
