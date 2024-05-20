@@ -361,3 +361,28 @@ double abs_min3(double a, double b, double c)
         min = c;
     return min;
 }
+
+double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slope)
+{
+    double acc_approx = *vel - prev_vel;
+    double acc_calc = vel_ref - *vel;
+    double out = *vel;
+
+    // std::cout << "vel           =  " << *vel << std::endl;
+    // std::cout << "prev_vel      =  " << prev_vel << std::endl;
+    // std::cout << "acc_approx    =  " << acc_approx << std::endl;
+    // std::cout << "acc_calc      =  " << acc_calc << std::endl;
+
+    if (fabs(vel_ref) > fabs(*vel))
+    {
+        if (fabs(acc_calc) - fabs(acc_approx) > jerk_slope)
+            out = *vel + acc_approx + sign(vel_ref) * jerk_slope;
+        else
+            out = vel_ref;
+    }
+    // out *= sign(vel_ref);
+    // std::cout << "sign(vel_ref) =  " << sign(vel_ref) << std::endl;
+    // std::cout << "out           =  " << out << std::endl;
+    // std::cout << "               " << std::endl;
+    return out;
+}

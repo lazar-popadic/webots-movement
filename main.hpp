@@ -109,5 +109,6 @@ void set_cruising_vel(double vel);
 void set_max_ang_vel(double vel);
 double get_cruising_vel();
 double get_max_ang_vel();
+double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slope);
 
 #endif /* __MAIN_HPP */

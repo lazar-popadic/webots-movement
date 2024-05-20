@@ -37,6 +37,10 @@ int dir;
 
 double cruising_vel = 999, max_ang_vel = 999;
 double vel_ramp, ang_vel_ramp;
+double prev_vel = 0;
+double cur_vel = 0;
+double prev_ang_vel = 0;
+double cur_ang_vel = 0;
 
 int main(int argc, char **argv)
 {
@@ -80,10 +84,25 @@ int main(int argc, char **argv)
       ang_vel_ref = get_ang_vel_ref();
       // acc_ramp(&vel_ref, get_vel_ref(), 0.2);
       // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 2.4);
-      vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, 999);
-      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, 999);
+      // std::cout << "vel_ref      =  " << vel_ref << std::endl;
 
-      // std::cout << "robot_obj.get_ang_vel()  =  " << robot_obj.get_ang_vel() << std::endl;
+      cur_vel = robot_obj.get_vel();
+      cur_ang_vel = robot_obj.get_ang_vel();
+      vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, fabs(vel_s_curve(&cur_vel, prev_vel, vel_ref, 0.04)));
+      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, fabs(vel_s_curve(&cur_ang_vel, prev_ang_vel, ang_vel_ref, 1.2)));
+      // vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, 9999);
+      // ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, 9999);
+
+      // std::cout << "vel_ref      =  " << vel_ref << std::endl;
+
+      // std::cout << "cur_vel      =  " << cur_vel << std::endl;
+      // std::cout << "prev_vel     =  " << prev_vel << std::endl;
+      // std::cout << "               " << std::endl;
+
+      // vel_ref = ;
+      // ang_vel_ref = ;
+      prev_vel = robot_obj.get_vel();
+      prev_ang_vel = robot_obj.get_ang_vel();
     }
 
     robot_obj.is_moving(VEL_LIMIT, ANG_VEL_LIMIT);
@@ -106,6 +125,9 @@ int main(int argc, char **argv)
     {
     case 0:
       move_on_path(0, -500, 180, BACW, true, MAX_VEL);
+      // move_to_xy(-1000, 500, BACW, MAX_VEL, MAX_ANG_VEL);
+      // move_on_dir(1000, BACW, MAX_VEL);
+      // move_to_xy(1000, 500, FORW, MAX_VEL, MAX_ANG_VEL);
       phase = 1;
       break;
 
@@ -135,7 +157,7 @@ int main(int argc, char **argv)
       break;
 
     case 6:
-      move_on_dir(250 * sqrt(2), FORW, MAX_VEL/3);
+      move_on_dir(250 * sqrt(2), FORW, MAX_VEL / 3);
       phase = 7;
       break;
 
