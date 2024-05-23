@@ -125,17 +125,17 @@ int main(int argc, char **argv)
     switch (phase)
     {
     case 0:
-      move_on_path(1000, 0, 0, FORW, true, MAX_VEL);
+      move_on_path(0, 0, 90, FORW, true, MAX_VEL);
       phase = 1;
       break;
 
     case 1:
       if (!get_movement_status())
-        phase = 99;
+        phase = 2;
       break;
 
     case 2:
-      move_on_path(0, 0, 0, BACW, false, MAX_VEL / 2);
+      move_on_path(500, 0, -90, FORW, false, MAX_VEL / 2);
       phase = 3;
       break;
 

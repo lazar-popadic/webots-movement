@@ -36,16 +36,6 @@ bool done = true;
 int8_t reg_type = 0;
 int8_t phase = 0;
 
-// PID distance_loop(0.16, 0.04, 0.0, 10);
-// PID angle_loop(2.5, 0.56, 0.0, 72);
-// PID distance_loop(0.1, 0.0, 0.0, 10);
-// PID angle_loop(1.0, 0.0, 0.0, 72);
-
-// PID bezier_distance_loop(0.16, 0.04, 0.0, 10);
-// PID bezier_angle_loop(2.0, 0.02, 0.08, 72);
-// PID bezier_distance_loop(0.004, 0.0, 0.0, 10);
-// PID bezier_angle_loop(2.0, 0.0, 0.0, 72);
-
 pid dist_loop;
 pid ang_loop;
 bool cont_move;
@@ -129,7 +119,6 @@ void follow_curve()
             vel_ref = (get_dir() * (-2) + 1) * get_cruising_vel();
         else
             vel_ref = (get_dir() * (-2) + 1) * calculate(&dist_loop, cur_dis_error_projected);
-        // vel_ref = (get_dir() * (-2) + 1) * 12;   // ovako nastavlja kretnju, ali mi prvo treba zadavanje brzine kruziranja
         cur_segment_len = sqrt((get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) + (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y));
         t = cur_dis_error_projected / cur_segment_len;
         saturation(&t, 1, 0);
@@ -347,6 +336,8 @@ void move_on_path(double x, double y, double phi, int dir, bool cont, double cru
     set_reg_type(2);
     set_curve_ptr((curve *)malloc(sizeof(curve)));
     create_curve(get_curve_ptr(), create_target(x, y, phi), dir);
+    // if (create_curve(get_curve_ptr(), create_target(x, y, phi), dir))
+        // return 1;    // TODO: ovde uradi testiranje drugih krivih
     set_dir(dir);
     cont_move = cont;
     set_cruising_vel(cruising_vel);

@@ -40,6 +40,7 @@ typedef struct
     coord *equ_pts;
     int num_equ_pts;
     double dis;
+    double max_ang_change;
 } curve;
 
 typedef struct
@@ -75,8 +76,8 @@ int sign(double signal);
 
 target create_target(double x, double y, double phi);
 
-void create_curve(curve *curve_ptr, target desired_position, int dir);
-void cubic_bezier_pts(curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
+int create_curve(curve *curve_ptr, target desired_position, int dir);
+int cubic_bezier_pts(curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
 void equ_coords(curve *curve_ptr);
 MyRobot get_robot();
 void follow_curve();
@@ -114,8 +115,6 @@ double get_max_ang_vel();
 double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slope);
 
 coord get_obstacle();
-void push_pt(coord *pt, coord center);
-double plus_quadratic_eq(double a, double b, double c);
-double minus_quadratic_eq(double a, double b, double c);
+double abs_max(double a, double b);
 
 #endif /* __MAIN_HPP */

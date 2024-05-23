@@ -1,7 +1,8 @@
 #include "main.hpp"
 
-void create_curve(curve *curve_ptr, target desired_position, int dir)
+int create_curve(curve *curve_ptr, target desired_position, int dir)
 {
+    curve_ptr->max_ang_change = 0;
     target robot_position = get_robot().get_position();
     static coord p0;
     static coord p1;
@@ -23,26 +24,31 @@ void create_curve(curve *curve_ptr, target desired_position, int dir)
 
     curve_ptr->dis = 0;
 
-    cubic_bezier_pts(curve_ptr, p0, p1, p2, p3);
+    if (cubic_bezier_pts(curve_ptr, p0, p1, p2, p3))
+        return 1;
 
     curve_ptr->equ_pts = (coord *)malloc((curve_ptr->dis / POINT_DISTANCE + 2) * sizeof(coord));
 
     equ_coords(curve_ptr);
+    std::cout << curve_ptr->max_ang_change << std::endl;
+    return 0;
 }
 
-void cubic_bezier_pts(curve *curve_ptr, coord p0, coord p1, coord p2, coord p3)
+int cubic_bezier_pts(curve *curve_ptr, coord p0, coord p1, coord p2, coord p3)
 {
     for (int i = 0; i < BEZIER_RESOLUTION; i++)
     {
         double t = (double)i / BEZIER_RESOLUTION;
         curve_ptr->pts[i].x = pow(1 - t, 3) * p0.x + 3 * t * pow(1 - t, 2) * p1.x + 3 * pow(t, 2) * (1 - t) * p2.x + pow(t, 3) * p3.x;
         curve_ptr->pts[i].y = pow(1 - t, 3) * p0.y + 3 * t * pow(1 - t, 2) * p1.y + 3 * pow(t, 2) * (1 - t) * p2.y + pow(t, 3) * p3.y;
-        push_pt(&curve_ptr->pts[i], get_obstacle());
         if (i > 0)
         {
             curve_ptr->dis += sqrt((curve_ptr->pts[i].x - curve_ptr->pts[i - 1].x) * (curve_ptr->pts[i].x - curve_ptr->pts[i - 1].x) + (curve_ptr->pts[i].y - curve_ptr->pts[i - 1].y) * (curve_ptr->pts[i].y - curve_ptr->pts[i - 1].y));
         }
+        // if (sqrt((curve_ptr->pts[i].x - get_obstacle().x) * (curve_ptr->pts[i].x - get_obstacle().x) + (curve_ptr->pts[i].y - get_obstacle().y) * (curve_ptr->pts[i].y - get_obstacle().y)) < AVOID_DIS)
+        // return 1;    // TODO: ovo dodaj
     }
+    return 0;
 }
 
 void equ_coords(curve *curve_ptr)
@@ -55,7 +61,6 @@ void equ_coords(curve *curve_ptr)
     {
         cur_dis = sqrt((curve_ptr->pts[i].x - curve_ptr->pts[i - 1].x) * (curve_ptr->pts[i].x - curve_ptr->pts[i - 1].x) + (curve_ptr->pts[i].y - curve_ptr->pts[i - 1].y) * (curve_ptr->pts[i].y - curve_ptr->pts[i - 1].y));
         curve_ptr->dis += cur_dis;
-        // temp_length += cur_dis;
         temp_length = sqrt((curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->pts[i].x) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->pts[i].x) + (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->pts[i].y) * (curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->pts[i].y));
         if (temp_length >= POINT_DISTANCE)
         {
@@ -63,6 +68,10 @@ void equ_coords(curve *curve_ptr)
             temp_length = 0;
             curve_ptr->equ_pts[curve_ptr->num_equ_pts] = curve_ptr->pts[i];
             // std::cout << curve_ptr->equ_pts[curve_ptr->num_equ_pts].x << "    " << curve_ptr->equ_pts[curve_ptr->num_equ_pts].y << std::endl;
+            if (curve_ptr->num_equ_pts > 1)
+            {
+                curve_ptr->max_ang_change = abs_max (curve_ptr->max_ang_change, 180 / M_PI * (atan2(curve_ptr->equ_pts[curve_ptr->num_equ_pts].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].y, curve_ptr->equ_pts[curve_ptr->num_equ_pts].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].x) - atan2(curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 2].y, curve_ptr->equ_pts[curve_ptr->num_equ_pts - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts - 2].x)));
+            }
         }
     }
     // cur_dis = sqrt((curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].x - curve_ptr->equ_pts[curve_ptr->num_equ_pts].x) + (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts].y) * (curve_ptr->pts[BEZIER_RESOLUTION - 1].y - curve_ptr->equ_pts[curve_ptr->num_equ_pts].y));
@@ -79,35 +88,4 @@ target create_target(double x, double y, double phi)
     temp_target.y = y;
     temp_target.phi = phi;
     return temp_target;
-}
-
-void push_pt(coord *pt, coord center)
-{
-    coord pushed;
-    if (sqrt((pt->x - center.x) * (pt->x - center.x) + (pt->y - center.y) * (pt->y - center.y)) < AVOID_DIS)
-    {
-        double k = (center.y - pt->y) / (center.x - pt->x);
-        double n = center.y - k * center.x;
-
-        double a = 1 + k * k;
-        double b = 2 * k * (n - center.y) - 2 * center.x;
-        double c = center.x * center.x + (n - center.y) * (n - center.y) - (double)AVOID_DIS * AVOID_DIS;
-
-        pushed.x = plus_quadratic_eq(a, b, c);
-        if (sign(center.x - pushed.x) != sign(center.x - pt->x))
-            pushed.x = minus_quadratic_eq(a, b, c);
-        pushed.y = center.y - (center.y - pt->y) / (center.x - pt->x) * center.x + (center.y - pt->y) / (center.x - pt->x) * pushed.x;
-        *pt = pushed;
-    }
-    return;
-}
-
-double plus_quadratic_eq(double a, double b, double c)
-{
-    return (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
-}
-
-double minus_quadratic_eq(double a, double b, double c)
-{
-    return (-b - sqrt(b * b - 4 * a * c)) / (2 * a);
 }
