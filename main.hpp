@@ -24,6 +24,8 @@
 #define MAX_VEL 4
 #define MAX_ANG_VEL 40
 
+#define AVOID_DIS   500
+
 using namespace webots;
 
 typedef struct
@@ -110,5 +112,10 @@ void set_max_ang_vel(double vel);
 double get_cruising_vel();
 double get_max_ang_vel();
 double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slope);
+
+coord get_obstacle();
+void push_pt(coord *pt, coord center);
+double plus_quadratic_eq(double a, double b, double c);
+double minus_quadratic_eq(double a, double b, double c);
 
 #endif /* __MAIN_HPP */
