@@ -41,6 +41,13 @@ double prev_vel = 0;
 double cur_vel = 0;
 double prev_ang_vel = 0;
 double cur_ang_vel = 0;
+double prev_vel_right = 0;
+double prev_vel_left = 0;
+double pid_ang_vel_right = 0;
+double pid_ang_vel_left = 0;
+double cur_ang_vel_right = 0;
+double cur_ang_vel_left = 0;
+
 coord obstacle = {0, 0};
 
 int main(int argc, char **argv)
@@ -59,8 +66,8 @@ int main(int argc, char **argv)
   right_passive->enable(1);
   left_passive->enable(1);
 
-  init_pid(&ang_vel_loop_2, 0.1, 0.1, 0.0042, 12, 12);
-  init_pid(&vel_loop_2, 1.0, 1.0, 0.1, 12, 12);
+  init_pid(&ang_vel_loop_2, 0.1, 0.1, 0.0042, 16, 16);
+  init_pid(&vel_loop_2, 1.0, 1.0, 0.1, 16, 16);
   pid_init();
 
   while (my_robot->step(1) != -1)
@@ -83,39 +90,37 @@ int main(int argc, char **argv)
       move();
       vel_ref = get_vel_ref();
       ang_vel_ref = get_ang_vel_ref();
-      // acc_ramp(&vel_ref, get_vel_ref(), 0.2);
-      // acc_ramp(&ang_vel_ref, get_ang_vel_ref(), 2.4);
-      // std::cout << "vel_ref      =  " << vel_ref << std::endl;
 
       cur_vel = robot_obj.get_vel();
       cur_ang_vel = robot_obj.get_ang_vel();
+
       vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, fabs(vel_s_curve(&cur_vel, prev_vel, vel_ref, 0.08)));
-      // ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, fabs(vel_s_curve(&cur_ang_vel, prev_ang_vel, ang_vel_ref, 0.8)));
-      // vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, 9999);
-      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, 9999);
+      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, fabs(vel_s_curve(&cur_ang_vel, prev_ang_vel, ang_vel_ref, 1.0)));
 
-      // std::cout << "vel_ref      =  " << vel_ref << std::endl;
-
-      // std::cout << "cur_vel      =  " << cur_vel << std::endl;
-      // std::cout << "prev_vel     =  " << prev_vel << std::endl;
-      // std::cout << "               " << std::endl;
-
-      // vel_ref = ;
-      // ang_vel_ref = ;
       prev_vel = robot_obj.get_vel();
       prev_ang_vel = robot_obj.get_ang_vel();
+      // std::cout << "robot_obj.get_ang_vel()      =  " << robot_obj.get_ang_vel() << std::endl;
+      // std::cout << "robot_obj.get_vel()      =  " << robot_obj.get_vel() << std::endl;
     }
 
     robot_obj.is_moving(VEL_LIMIT, ANG_VEL_LIMIT);
+    
 
     ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
     vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
-    // ang_vel_control = calculate2(&ang_vel_loop_2, ang_vel_ref, robot_obj.get_ang_vel());
-    // vel_control = calculate2(&vel_loop_2, vel_ref, robot_obj.get_vel());
 
-    ang_vel_right = vel_control + ang_vel_control;
-    ang_vel_left = vel_control - ang_vel_control;
-    scale_vel_ref(&ang_vel_right, &ang_vel_left, 12);
+    pid_ang_vel_right = vel_control + ang_vel_control;
+    pid_ang_vel_left = vel_control - ang_vel_control;
+    scale_vel_ref(&pid_ang_vel_right, &pid_ang_vel_left, 16);
+
+    cur_ang_vel_right = ang_vel_right;
+    cur_ang_vel_left = ang_vel_left;
+
+    ang_vel_right = abs_min(pid_ang_vel_right, vel_s_curve(&cur_ang_vel_right, prev_vel_right, pid_ang_vel_right, 0.04));
+    ang_vel_left = abs_min(pid_ang_vel_left, vel_s_curve(&cur_ang_vel_left, prev_vel_left, pid_ang_vel_left, 0.04));
+
+    prev_vel_right = cur_ang_vel_right;
+    prev_vel_left = cur_ang_vel_left;
 
     right_motor->setVelocity(ang_vel_right);
     left_motor->setVelocity(ang_vel_left);
@@ -135,7 +140,7 @@ int main(int argc, char **argv)
       break;
 
     case 2:
-      move_on_path(500, 0, -90, FORW, false, MAX_VEL / 2);
+      move_on_path(500, 500, -45, FORW, true, MAX_VEL / 2);
       phase = 3;
       break;
 
@@ -145,7 +150,7 @@ int main(int argc, char **argv)
       break;
 
     case 4:
-      move_on_path(250, -500, 180, FORW, true, MAX_VEL);
+      move_on_path(250, -250, -135, FORW, true, MAX_VEL);
       phase = 5;
       break;
 
@@ -155,7 +160,7 @@ int main(int argc, char **argv)
       break;
 
     case 6:
-      move_on_dir(250 * sqrt(2), FORW, MAX_VEL / 3);
+      move_to_xy(-250, -750, FORW, MAX_VEL / 2, MAX_ANG_VEL);
       phase = 7;
       break;
 
@@ -165,11 +170,41 @@ int main(int argc, char **argv)
       break;
 
     case 8:
-      move_on_path(0, 0, 0, FORW, false, MAX_VEL);
+      rot_to_angle(135, MAX_ANG_VEL);
       phase = 9;
       break;
 
     case 9:
+      if (!get_movement_status())
+        phase = 10;
+      break;
+
+    case 10:
+      move_on_path(0, 0, 0, FORW, false, MAX_VEL);
+      phase = 11;
+      break;
+
+    case 11:
+      if (!get_movement_status())
+        phase = 99;
+      break;
+
+    case 100:
+      move_on_path(-1250, -250, 180, FORW, false, MAX_VEL);
+      phase = 101;
+      break;
+
+    case 101:
+      if (!get_movement_status())
+        phase = 99;
+      break;
+
+    case 200:
+      rot_to_angle(180, MAX_ANG_VEL);
+      phase = 201;
+      break;
+
+    case 201:
       if (!get_movement_status())
         phase = 99;
       break;

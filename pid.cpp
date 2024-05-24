@@ -6,8 +6,8 @@ double calculate(pid *pid_ptr, double err)
     saturation(&(pid_ptr->err_sum), pid_ptr->sum_lmt, -pid_ptr->sum_lmt);
     pid_ptr->ctrl = pid_ptr->p * err + pid_ptr->i * pid_ptr->err_sum + pid_ptr->d * pid_ptr->err_dif;
     saturation(&(pid_ptr->ctrl), pid_ptr->lmt, -pid_ptr->lmt);
-    pid_ptr->err_p = err;
     pid_ptr->err_dif = err - pid_ptr->err_p;
+    pid_ptr->err_p = err;
     return pid_ptr->ctrl;
 }
 

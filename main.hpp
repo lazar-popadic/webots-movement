@@ -21,8 +21,8 @@
 #define FORW 0
 #define BACW 1
 
-#define MAX_VEL 4
-#define MAX_ANG_VEL 40
+#define MAX_VEL 3.2
+#define MAX_ANG_VEL 36.0
 
 #define AVOID_DIS   500
 
@@ -116,5 +116,6 @@ double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slo
 
 coord get_obstacle();
 double abs_max(double a, double b);
+double abs_min(double a, double b);
 
 #endif /* __MAIN_HPP */

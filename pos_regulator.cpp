@@ -38,12 +38,14 @@ int8_t phase = 0;
 
 pid dist_loop;
 pid ang_loop;
+pid curve_ang_loop;
 bool cont_move;
 
 void pid_init()
 {
     init_pid(&dist_loop, 0.08, 0.0, 0.0, 4, 4);
-    init_pid(&ang_loop, 1.0, 0.0, 0.0, 45, 45);
+    init_pid(&ang_loop, 1.2, 0.0, 0.0, 40, 40);
+    init_pid(&curve_ang_loop, 0.6, 0.0, 0.0, 40, 40);
 }
 
 double bezier_distance = 0;
@@ -82,7 +84,7 @@ void follow_curve()
         error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
         normalize_angle(&error_phi_prim);
         vel_ref = calculate(&dist_loop, distance);
-        ang_vel_ref = calculate(&ang_loop, error_phi_prim);
+        ang_vel_ref = calculate(&curve_ang_loop, error_phi_prim);
 
         if (cur_dis_error_projected < 0)
         {
@@ -124,7 +126,7 @@ void follow_curve()
         saturation(&t, 1, 0);
 
         error_phi_final = t * error_phi_prim + (1 - t) * error_phi;
-        ang_vel_ref = calculate(&ang_loop, error_phi_final);
+        ang_vel_ref = calculate(&curve_ang_loop, error_phi_final);
 
         if (cur_dis_error_projected < 0)
         {
@@ -351,6 +353,13 @@ double abs_min3(double a, double b, double c)
     if (fabs(c) < min)
         min = c;
     return min;
+}
+
+double abs_min(double a, double b)
+{
+    if (fabs(b) < fabs(a))
+        return  b;
+    return a;
 }
 
 double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slope)
