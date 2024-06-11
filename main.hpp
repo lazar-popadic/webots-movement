@@ -9,6 +9,7 @@
 #include "MyRobot.hpp"
 #include "pid.hpp"
 #include <vector>
+#include <cstdlib>
 
 #define VEL_LIMIT 0.001
 #define ANG_VEL_LIMIT 0.012
@@ -48,6 +49,13 @@ typedef struct
     int8_t finished : 1;
     int8_t success : 1;
 } task;
+
+typedef enum
+{
+    RUNNING,
+    SUCCESS,
+    FAILURE
+}status;
 
 typedef struct
 {
@@ -117,5 +125,9 @@ double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slo
 coord get_obstacle();
 double abs_max(double a, double b);
 double abs_min(double a, double b);
+
+status move_on_path_wrapper(double x, double y, double phi, int dir, bool cont, double cruising_vel);
+status move_to_xy_wrapper(double x, double y, int dir, double cruising_vel, double max_ang_vel);
+status rot_to_angle_wrapper(double phi, double max_ang_vel);
 
 #endif /* __MAIN_HPP */

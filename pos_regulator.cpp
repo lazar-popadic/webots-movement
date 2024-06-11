@@ -41,6 +41,8 @@ pid ang_loop;
 pid curve_ang_loop;
 bool cont_move;
 
+bool move_init = false;
+
 void pid_init()
 {
     init_pid(&dist_loop, 0.08, 0.0, 0.0, 4, 4);
@@ -53,7 +55,7 @@ double bezier_distance = 0;
 static void rotate();
 static void go_to_xy();
 
-task status;
+task task_status;
 bool movement_status;
 
 void follow_curve()
@@ -61,8 +63,8 @@ void follow_curve()
     switch (phase)
     {
     case 0: // curve
-        status.finished = false;
-        status.success = false;
+        task_status.finished = false;
+        task_status.success = false;
         cur_error.x = get_curve_ptr()->equ_pts[curve_cnt].x - get_robot().get_position().x;
         cur_error.y = get_curve_ptr()->equ_pts[curve_cnt].y - get_robot().get_position().y;
         next_error.x = get_curve_ptr()->equ_pts[curve_cnt + 1].x - get_robot().get_position().x;
@@ -130,8 +132,8 @@ void follow_curve()
 
         if (cur_dis_error_projected < 0)
         {
-            status.finished = true;
-            status.success = true;
+            task_status.finished = true;
+            task_status.success = true;
             phase = 0;
             movement_finished();
 
@@ -386,3 +388,85 @@ double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slo
     // std::cout << "               " << std::endl;
     return out;
 }
+
+status move_on_path_wrapper(double x, double y, double phi, int dir, bool cont, double cruising_vel)
+{
+    status move_status = RUNNING;
+	if (!move_init)
+	{
+		move_init = true;
+		move_on_path(x, y, phi, dir, cont, cruising_vel);
+	}
+	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
+	{
+		move_init = false;
+		move_status = SUCCESS;
+	}
+	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
+	{
+		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
+		move_status = FAILURE;
+	}
+	// else
+	// 	move_status = RUNNING;
+
+    return move_status;
+}
+
+status move_to_xy_wrapper(double x, double y, int dir, double cruising_vel, double max_ang_vel)
+{
+    status move_status = RUNNING;
+	if (!move_init)
+	{
+		move_init = true;
+		move_to_xy(x, y, dir, cruising_vel, max_ang_vel);
+	}
+	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
+	{
+		move_init = false;
+		move_status = SUCCESS;
+	}
+	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
+	{
+		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
+		move_status = FAILURE;
+	}
+	// else
+	// 	move_status = RUNNING;
+
+    return move_status;
+}
+
+status rot_to_angle_wrapper(double phi, double max_ang_vel)
+{
+    status move_status = RUNNING;
+	if (!move_init)
+	{
+		move_init = true;
+		rot_to_angle(phi, max_ang_vel);
+	}
+	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
+	{
+		move_init = false;
+		move_status = SUCCESS;
+	}
+	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
+	{
+		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
+		move_status = FAILURE;
+	}
+	// else
+	// 	move_status = RUNNING;
+
+    return move_status;
+}
+
+
+/*
+*
+*	ovo isto za sve tipove kretnje, samo druga funkcija za move i drugi argumenti:
+*		- rot_to_angle(double phi, double max_ang_vel)
+*		- move_on_dir(double distance, int dir, double cruising_vel)
+*		- rot_to_xy(double x, double y, int dir, double max_ang_vel)
+*
+*/

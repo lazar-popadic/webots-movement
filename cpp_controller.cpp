@@ -104,7 +104,6 @@ int main(int argc, char **argv)
     }
 
     robot_obj.is_moving(VEL_LIMIT, ANG_VEL_LIMIT);
-    
 
     ang_vel_control = ang_vel_loop.calculate(ang_vel_ref, robot_obj.get_ang_vel());
     vel_control = vel_loop.calculate(vel_ref, robot_obj.get_vel());
@@ -130,82 +129,32 @@ int main(int argc, char **argv)
     switch (phase)
     {
     case 0:
-      move_on_path(0, 0, 90, FORW, true, MAX_VEL);
-      phase = 1;
+      if (move_on_path_wrapper(0, 0, 90, FORW, true, MAX_VEL) == SUCCESS)
+        phase = 1;
       break;
 
     case 1:
-      if (!get_movement_status())
+      if (move_on_path_wrapper(500, 500, -45, FORW, true, MAX_VEL) == SUCCESS)
         phase = 2;
       break;
 
     case 2:
-      move_on_path(500, 500, -45, FORW, true, MAX_VEL / 2);
-      phase = 3;
+      if (move_on_path_wrapper(250, -250, -135, FORW, true, MAX_VEL) == SUCCESS)
+        phase = 3;
       break;
 
     case 3:
-      if (!get_movement_status())
+      if (move_to_xy_wrapper(-250, -750, FORW, MAX_VEL / 2, MAX_ANG_VEL) == SUCCESS)
         phase = 4;
       break;
 
     case 4:
-      move_on_path(250, -250, -135, FORW, true, MAX_VEL);
-      phase = 5;
+      if (rot_to_angle_wrapper(135, MAX_ANG_VEL) == SUCCESS)
+        phase = 5;
       break;
 
     case 5:
-      if (!get_movement_status())
-        phase = 6;
-      break;
-
-    case 6:
-      move_to_xy(-250, -750, FORW, MAX_VEL / 2, MAX_ANG_VEL);
-      phase = 7;
-      break;
-
-    case 7:
-      if (!get_movement_status())
-        phase = 8;
-      break;
-
-    case 8:
-      rot_to_angle(135, MAX_ANG_VEL);
-      phase = 9;
-      break;
-
-    case 9:
-      if (!get_movement_status())
-        phase = 10;
-      break;
-
-    case 10:
-      move_on_path(0, 0, 0, FORW, false, MAX_VEL);
-      phase = 11;
-      break;
-
-    case 11:
-      if (!get_movement_status())
-        phase = 99;
-      break;
-
-    case 100:
-      move_on_path(-1250, -250, 180, FORW, false, MAX_VEL);
-      phase = 101;
-      break;
-
-    case 101:
-      if (!get_movement_status())
-        phase = 99;
-      break;
-
-    case 200:
-      rot_to_angle(180, MAX_ANG_VEL);
-      phase = 201;
-      break;
-
-    case 201:
-      if (!get_movement_status())
+      if (move_on_path_wrapper(0, 0, 0, FORW, false, MAX_VEL) == SUCCESS)
         phase = 99;
       break;
 
