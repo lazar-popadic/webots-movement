@@ -1,6 +1,3 @@
-build/*
-.vscode/*
-cpp_controller
-*.exe
-bezier.cpp
-.vs/
+*/build/*
+controllers/cpp_controller/cpp_controller
+*/.vs/*
