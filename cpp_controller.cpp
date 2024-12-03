@@ -149,12 +149,12 @@ int main(int argc, char **argv)
       break;
 
     case 4:
-      if (rot_to_angle_wrapper(135, MAX_ANG_VEL) == SUCCESS)
+      if (rot_to_angle_wrapper(-45, MAX_ANG_VEL) == SUCCESS)
         phase = 5;
       break;
 
     case 5:
-      if (move_on_path_wrapper(0, 0, 0, FORW, false, MAX_VEL) == SUCCESS)
+      if (move_on_path_wrapper(0, 0, 180, BACW, false, MAX_VEL) == SUCCESS)
         phase = 99;
       break;
 
