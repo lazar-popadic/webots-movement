@@ -1,3 +1,12 @@
 */build/*
 controllers/cpp_controller/cpp_controller
 */.vs/*
+controllers/cpp_controller/build/release/cpp_controller
+controllers/cpp_controller/build/release/cpp_controller.d
+controllers/cpp_controller/build/release/cpp_controller.o
+controllers/cpp_controller/build/release/curve.d
+controllers/cpp_controller/build/release/curve.o
+controllers/cpp_controller/build/release/pid.d
+controllers/cpp_controller/build/release/pid.o
+controllers/cpp_controller/build/release/pos_regulator.d
+controllers/cpp_controller/build/release/pos_regulator.o
