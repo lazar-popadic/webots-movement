@@ -85,7 +85,7 @@ int main(int argc, char **argv)
   plt::xlim(-1500,1500);
   plt::ylim(-1000,1000);
   plt::title("Robot trajectory");
-  plt::show();
+  
 
 
   while (my_robot->step(1) != -1)
@@ -195,16 +195,19 @@ int main(int argc, char **argv)
 
     // PLOT
     plt_cnt++;
-    if (!(plt_cnt % 100))
+    if (!(plt_cnt % 64))
     {
       plt_cnt=1;
       x_plt.push_back(robot_obj.get_position().x);
       y_plt.push_back(robot_obj.get_position().y);
 
       plt::clf();
-      plt::plot(x_plt, y_plt, "b-");
-      plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 50);
-      plt::pause(0.0001);
+      plt::xlim(-1500,1500);
+      plt::ylim(-1000,1000);
+      plt::plot(x_plt, y_plt, "r-");
+      plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 80);
+      plt::pause(0.000000001);
+      plt::show();
     }
     // END_PLOT
   };
