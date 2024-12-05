@@ -6,6 +6,9 @@
 
 #include "main.hpp"
 #include <iostream>
+#include "matplotlibcpp.h"
+
+namespace plt = matplotlibcpp;
 
 // All the webots classes are defined in the "webots" namespace
 // using namespace webots;
@@ -69,6 +72,9 @@ int main(int argc, char **argv)
   init_pid(&ang_vel_loop_2, 0.1, 0.1, 0.0042, 16, 16);
   init_pid(&vel_loop_2, 1.0, 1.0, 0.1, 16, 16);
   pid_init();
+
+  plt::plot({1,3,2,4});
+  plt::show();
 
   while (my_robot->step(1) != -1)
   {

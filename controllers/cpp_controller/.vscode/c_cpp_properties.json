@@ -7,7 +7,9 @@
                 "/home/lazar/Programs/webots/**",
                 "/usr/include/**",
                 "/usr/lib/**",
-                "/home/lazar/Programs/webots/projects/robots/robotis/darwin-op/transfer/include"
+                "/home/lazar/Programs/webots/projects/robots/robotis/darwin-op/transfer/include",
+                "/usr/include/python3.12/**",
+                "/home/lazar/.local/share/pipx/venvs/numpy/lib/**"
             ],
             "defines": [],
             "cStandard": "c17",
