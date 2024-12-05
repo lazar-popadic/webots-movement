@@ -51,6 +51,9 @@ double pid_ang_vel_left = 0;
 double cur_ang_vel_right = 0;
 double cur_ang_vel_left = 0;
 
+int8_t plt_cnt = 1;
+
+
 coord obstacle = {0, 0};
 
 int main(int argc, char **argv)
@@ -72,9 +75,18 @@ int main(int argc, char **argv)
   init_pid(&ang_vel_loop_2, 0.1, 0.1, 0.0042, 16, 16);
   init_pid(&vel_loop_2, 1.0, 1.0, 0.1, 16, 16);
   pid_init();
+  
+  std::vector<double> x_plt, y_plt;
 
-  plt::plot({1,3,2,4});
+  // plt::plot({1,3,2,4});
+  // plt::show();
+  plt::ion();
+  plt::figure();
+  plt::xlim(-1500,1500);
+  plt::ylim(-1000,1000);
+  plt::title("Robot trajectory");
   plt::show();
+
 
   while (my_robot->step(1) != -1)
   {
@@ -180,6 +192,21 @@ int main(int argc, char **argv)
       break;
     }
     // END_MAIN
+
+    // PLOT
+    plt_cnt++;
+    if (!(plt_cnt % 100))
+    {
+      plt_cnt=1;
+      x_plt.push_back(robot_obj.get_position().x);
+      y_plt.push_back(robot_obj.get_position().y);
+
+      plt::clf();
+      plt::plot(x_plt, y_plt, "b-");
+      plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 50);
+      plt::pause(0.0001);
+    }
+    // END_PLOT
   };
 
   delete my_robot;

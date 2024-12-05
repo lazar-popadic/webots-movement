@@ -30,7 +30,7 @@ int create_curve(curve *curve_ptr, target desired_position, int dir)
     curve_ptr->equ_pts = (coord *)malloc((curve_ptr->dis / POINT_DISTANCE + 2) * sizeof(coord));
 
     equ_coords(curve_ptr);
-    std::cout << curve_ptr->max_ang_change << std::endl;
+    // std::cout << curve_ptr->max_ang_change << std::endl;
     return 0;
 }
 
