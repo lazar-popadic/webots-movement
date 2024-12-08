@@ -7,6 +7,7 @@
 #include "main.hpp"
 #include <iostream>
 #include "matplotlibcpp.h"
+#include <unistd.h> // For sleep (POSIX only)
 
 namespace plt = matplotlibcpp;
 
@@ -167,12 +168,12 @@ int main(int argc, char **argv)
       break;
 
     case 4:
-      if (rot_to_angle_wrapper(-45, MAX_ANG_VEL) == SUCCESS)
+      if (rot_to_angle_wrapper(180, MAX_ANG_VEL) == SUCCESS)
         phase = 5;
       break;
 
     case 5:
-      if (move_on_path_wrapper(0, 0, 180, BACW, false, MAX_VEL) == SUCCESS)
+      if (move_on_path_wrapper(1250, 750, -90, BACW, false, MAX_VEL) == SUCCESS)
         phase = 99;
       break;
 
@@ -189,6 +190,7 @@ int main(int argc, char **argv)
       std::cout << "controller finished successfully " << std::endl;
       std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
       std::cout << "time = " << my_robot->getTime() << std::endl;
+      sleep(10);
       break;
     }
     // END_MAIN
@@ -204,8 +206,8 @@ int main(int argc, char **argv)
       plt::clf();
       plt::xlim(-1500,1500);
       plt::ylim(-1000,1000);
-      plt::plot(x_plt, y_plt, "r-");
-      plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 80);
+      plt::plot(x_plt, y_plt, {{"color", "black"}, {"linewidth", "0.5"}});
+      plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 64);
       plt::pause(0.000000001);
       plt::show();
     }
