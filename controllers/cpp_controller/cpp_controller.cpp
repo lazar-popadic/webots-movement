@@ -82,7 +82,8 @@ int main(int argc, char **argv)
   // plt::plot({1,3,2,4});
   // plt::show();
   plt::ion();
-  plt::figure();
+  // plt::figure();
+  plt::figure_size(800, 400); // 800 pixels wide and 400 pixels high
   plt::xlim(-1500,1500);
   plt::ylim(-1000,1000);
   plt::title("Robot trajectory");
@@ -148,17 +149,17 @@ int main(int argc, char **argv)
     switch (phase)
     {
     case 0:
-      if (move_on_path_wrapper(0, 0, 90, FORW, true, MAX_VEL) == SUCCESS)
+      if (move_to_xy_wrapper(-500, 0, BACW, MAX_VEL, MAX_ANG_VEL) == SUCCESS)
         phase = 1;
       break;
 
     case 1:
-      if (move_on_path_wrapper(500, 500, -45, FORW, true, MAX_VEL) == SUCCESS)
+      if (move_on_path_wrapper(500, 500, 135, BACW, true, MAX_VEL) == SUCCESS)
         phase = 2;
       break;
 
     case 2:
-      if (move_on_path_wrapper(250, -250, -135, FORW, true, MAX_VEL) == SUCCESS)
+      if (move_on_path_wrapper(250, -250, 45, BACW, false, MAX_VEL) == SUCCESS)
         phase = 3;
       break;
 
@@ -173,7 +174,7 @@ int main(int argc, char **argv)
       break;
 
     case 5:
-      if (move_on_path_wrapper(1250, 750, -90, BACW, false, MAX_VEL) == SUCCESS)
+      if (move_on_path_wrapper(0, 0, 0, BACW, false, MAX_VEL) == SUCCESS)
         phase = 99;
       break;
 
@@ -196,7 +197,7 @@ int main(int argc, char **argv)
     // END_MAIN
 
     // PLOT
-    plt_cnt++;
+    // plt_cnt++;
     if (!(plt_cnt % 64))
     {
       plt_cnt=1;
@@ -206,7 +207,9 @@ int main(int argc, char **argv)
       plt::clf();
       plt::xlim(-1500,1500);
       plt::ylim(-1000,1000);
+      // plt::subplot(1,2,1);
       plt::plot(x_plt, y_plt, {{"color", "black"}, {"linewidth", "0.5"}});
+      // plt::subplot(1,2,2);
       plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 64);
       plt::pause(0.000000001);
       plt::show();

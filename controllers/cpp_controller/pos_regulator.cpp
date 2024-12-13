@@ -76,7 +76,7 @@ void follow_curve()
         normalize_angle(&error_phi_prim_2);
 
         distance = get_curve_ptr()->dis - curve_cnt * POINT_DISTANCE;
-        distance *= (get_dir() * (-2) + 1);
+        distance *= get_dir();
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim_1 * M_PI / 180);
 
@@ -120,9 +120,9 @@ void follow_curve()
         cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
         cur_dis_error_projected = cur_dis_error * cos(error_phi_prim * M_PI / 180);
         if (cont_move)
-            vel_ref = (get_dir() * (-2) + 1) * get_cruising_vel();
+            vel_ref = get_dir() * get_cruising_vel();
         else
-            vel_ref = (get_dir() * (-2) + 1) * calculate(&dist_loop, cur_dis_error_projected);
+            vel_ref = get_dir() * calculate(&dist_loop, cur_dis_error_projected);
         cur_segment_len = sqrt((get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) + (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y));
         t = cur_dis_error_projected / cur_segment_len;
         saturation(&t, 1, 0);
@@ -179,7 +179,7 @@ static void go_to_xy()
 {
     error_x = get_desired().x - get_robot().get_position().x;
     error_y = get_desired().y - get_robot().get_position().y;
-    error_phi_prim = atan2(error_y, error_x) * 180 / M_PI + get_dir() * 180 - get_robot().get_position().phi;
+    error_phi_prim = atan2(error_y, error_x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
     normalize_angle(&error_phi_prim);
 
     switch (phase)
@@ -192,12 +192,13 @@ static void go_to_xy()
         break;
 
     case 1: // tran
-        distance = (get_dir() * (-2) + 1) * sqrt(error_x * error_x + error_y * error_y);
-        if (fabs(error_phi_prim) > 90) // TODO: mozda bi ovde bilo dobro da mnozim sa kosinusom. mozda moze i bez faza, samo da uvek mnozim sa kosinusom
-            vel_ref = -calculate(&dist_loop, distance);
+        distance = get_dir() * sqrt(error_x * error_x + error_y * error_y);
+        if (fabs(error_phi_prim) > 90)
+            vel_ref = -calculate(&dist_loop, distance* cos(error_phi_prim * M_PI / 180));
         else
-            vel_ref = calculate(&dist_loop, distance);
-        // vel_ref = calculate(&dist_loop, distance* cos(error_phi_prim * M_PI / 180));
+        vel_ref = calculate(&dist_loop, distance* cos(error_phi_prim * M_PI / 180));
+            // vel_ref = calculate(&dist_loop, distance);
+        
         if (fabs(distance) > DISTANCE_LIMIT2)
             ang_vel_ref = calculate(&ang_loop, error_phi_prim);
         else
@@ -319,8 +320,8 @@ void move_on_dir(double distance, int dir, double cruising_vel)
 {
     movement_started();
     set_reg_type(1);
-    set_desired_x(get_robot().get_position().x + (dir * (-2) + 1) * distance * cos(get_robot().get_position().phi * M_PI / 180));
-    set_desired_y(get_robot().get_position().y + (dir * (-2) + 1) * distance * sin(get_robot().get_position().phi * M_PI / 180));
+    set_desired_x(get_robot().get_position().x + dir * distance * cos(get_robot().get_position().phi * M_PI / 180));
+    set_desired_y(get_robot().get_position().y + dir * distance * sin(get_robot().get_position().phi * M_PI / 180));
     set_dir(dir);
     set_cruising_vel(cruising_vel);
 }

@@ -19,8 +19,8 @@
 #define OFFS_ROBOT 400
 #define OFFS_DESIRED 520
 
-#define FORW 0
-#define BACW 1
+#define FORW 1
+#define BACW -1
 
 #define MAX_VEL 3.2
 #define MAX_ANG_VEL 36.0
