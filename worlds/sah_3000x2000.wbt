@@ -7,7 +7,7 @@ EXTERNPROTO "../protos/TurtleBot3Burger.proto"
 
 WorldInfo {
   basicTimeStep 8
-  FPS 600
+  FPS 240
 }
 Viewpoint {
   orientation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0944
@@ -19,9 +19,11 @@ TexturedBackgroundLight {
 }
 RectangleArena {
   floorSize 3 2
+  wallThickness 0.02
+  wallHeight 0.07
 }
 TurtleBot3Burger {
   translation -1.25 -0.75 -0.00181961
-  rotation 0 0 1 0
+  rotation 0 0 1 1
   controller "cpp_controller"
 }

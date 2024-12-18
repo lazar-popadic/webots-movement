@@ -53,7 +53,8 @@ double cur_ang_vel_right = 0;
 double cur_ang_vel_left = 0;
 
 int8_t plt_cnt = 1;
-
+int32_t sim_time = 0;
+std::vector<double> v_vec, sim_time_vec, w_vec;
 
 coord obstacle = {0, 0};
 
@@ -101,6 +102,8 @@ int main(int argc, char **argv)
     // END_INIT
 
     // TIMER_ISR
+    sim_time++;
+
     robot_obj.update_odom(right_passive->getValue(), left_passive->getValue());
 
     counter++;
@@ -115,7 +118,7 @@ int main(int argc, char **argv)
       cur_ang_vel = robot_obj.get_ang_vel();
 
       vel_ref = sign(vel_ref) * abs_min3(vel_ref, cruising_vel, fabs(vel_s_curve(&cur_vel, prev_vel, vel_ref, 0.08)));
-      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, fabs(vel_s_curve(&cur_ang_vel, prev_ang_vel, ang_vel_ref, 1.0)));
+      ang_vel_ref = sign(ang_vel_ref) * abs_min3(ang_vel_ref, max_ang_vel, fabs(vel_s_curve(&cur_ang_vel, prev_ang_vel, ang_vel_ref, 1)));
 
       prev_vel = robot_obj.get_vel();
       prev_ang_vel = robot_obj.get_ang_vel();
@@ -150,7 +153,7 @@ int main(int argc, char **argv)
     {
     case 0:
       if (move_to_xy_wrapper(-500, 0, BACW, MAX_VEL, MAX_ANG_VEL) == SUCCESS)
-        phase = 1;
+         phase = 1;
       break;
 
     case 1:
@@ -198,20 +201,24 @@ int main(int argc, char **argv)
 
     // PLOT
     // plt_cnt++;
-    if (!(plt_cnt % 64))
+    if (!(plt_cnt %= 64))
     {
-      plt_cnt=1;
       x_plt.push_back(robot_obj.get_position().x);
       y_plt.push_back(robot_obj.get_position().y);
 
       plt::clf();
+      // sim_time_vec.push_back(sim_time);
+      // v_vec.push_back(robot_obj.get_vel());
+      // w_vec.push_back(robot_obj.get_ang_vel());
+      // plt::plot(sim_time_vec, v_vec, {{"color", "blue"}, {"linewidth", "1"}});
+      // plt::plot(sim_time_vec, w_vec, {{"color", "red"}, {"linewidth", "1"}});
       plt::xlim(-1500,1500);
       plt::ylim(-1000,1000);
       // plt::subplot(1,2,1);
       plt::plot(x_plt, y_plt, {{"color", "black"}, {"linewidth", "0.5"}});
       // plt::subplot(1,2,2);
       plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 64);
-      plt::pause(0.000000001);
+      plt::pause(0.001);
       plt::show();
     }
     // END_PLOT
