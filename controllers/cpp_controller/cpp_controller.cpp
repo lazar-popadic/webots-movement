@@ -30,7 +30,7 @@ PID ang_vel_loop(0.1, 0.1, 0.0042, 12);
 pid ang_vel_loop_2;
 pid vel_loop_2;
 
-MyRobot robot_obj(-1250.0, -750.0, 0.0);
+MyRobot robot_obj(1275.0, -625.0, 180.0);
 task current_task_status;
 
 curve *curve_ptr;
