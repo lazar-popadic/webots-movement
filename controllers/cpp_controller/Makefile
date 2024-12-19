@@ -65,7 +65,7 @@
 ###
 ###-----------------------------------------------------------------------------
 
-CXX_SOURCES = cpp_controller.cpp pos_regulator.cpp curve.cpp pid.cpp
+CXX_SOURCES = cpp_controller.cpp pos_regulator.cpp curve.cpp pid.cpp tactic_template.cpp
 INCLUDE = -I/usr/include/python3.12 -I/home/lazar/.local/share/pipx/venvs/numpy/lib/python3.12/site-packages/numpy/_core/include
 LIBRARIES = -L"/usr/lib/libpython3.12.so" -lpython3.12
 VERBOSE = 1

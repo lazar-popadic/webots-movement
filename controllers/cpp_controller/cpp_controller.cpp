@@ -30,7 +30,7 @@ PID ang_vel_loop(0.1, 0.1, 0.0042, 12);
 pid ang_vel_loop_2;
 pid vel_loop_2;
 
-MyRobot robot_obj(1275.0, -625.0, 180.0);
+MyRobot robot_obj(1275.0, -125.0, 180.0);
 task current_task_status;
 
 curve *curve_ptr;
@@ -53,14 +53,15 @@ double cur_ang_vel_right = 0;
 double cur_ang_vel_left = 0;
 
 int8_t plt_cnt = 1;
-int32_t sim_time = 0;
 std::vector<double> v_vec, sim_time_vec, w_vec;
+double start_time = 0;
 
 coord obstacle = {0, 0};
+webots::Robot *my_robot = new webots::Robot();
 
 int main(int argc, char **argv)
 {
-  webots::Robot *my_robot = new webots::Robot();
+  //webots::Robot *my_robot = new webots::Robot();
 
   Motor *left_motor = my_robot->getMotor("left wheel motor");
   Motor *right_motor = my_robot->getMotor("right wheel motor");
@@ -80,17 +81,15 @@ int main(int argc, char **argv)
   
   std::vector<double> x_plt, y_plt;
 
-  // plt::plot({1,3,2,4});
-  // plt::show();
-  plt::ion();
-  // plt::figure();
-  plt::figure_size(800, 400); // 800 pixels wide and 400 pixels high
-  plt::xlim(-1500,1500);
-  plt::ylim(-1000,1000);
-  plt::title("Robot trajectory");
+  // // plt::plot({1,3,2,4});
+  // // plt::show();
+  // plt::ion();
+  // // plt::figure();
+  // plt::figure_size(800, 400); // 800 pixels wide and 400 pixels high
+  // plt::xlim(-1500,1500);
+  // plt::ylim(-1000,1000);
+  // plt::title("Robot trajectory");
   
-
-
   while (my_robot->step(1) != -1)
   {
     // INIT
@@ -102,8 +101,6 @@ int main(int argc, char **argv)
     // END_INIT
 
     // TIMER_ISR
-    sim_time++;
-
     robot_obj.update_odom(right_passive->getValue(), left_passive->getValue());
 
     counter++;
@@ -152,32 +149,7 @@ int main(int argc, char **argv)
     switch (phase)
     {
     case 0:
-      if (move_to_xy_wrapper(-500, 0, BACW, MAX_VEL, MAX_ANG_VEL) == SUCCESS)
-         phase = 1;
-      break;
-
-    case 1:
-      if (move_on_path_wrapper(500, 500, 135, BACW, true, MAX_VEL) == SUCCESS)
-        phase = 2;
-      break;
-
-    case 2:
-      if (move_on_path_wrapper(250, -250, 45, BACW, false, MAX_VEL) == SUCCESS)
-        phase = 3;
-      break;
-
-    case 3:
-      if (move_to_xy_wrapper(-250, -750, FORW, MAX_VEL / 2, MAX_ANG_VEL) == SUCCESS)
-        phase = 4;
-      break;
-
-    case 4:
-      if (rot_to_angle_wrapper(180, MAX_ANG_VEL) == SUCCESS)
-        phase = 5;
-      break;
-
-    case 5:
-      if (move_on_path_wrapper(0, 0, 0, BACW, false, MAX_VEL) == SUCCESS)
+      if (tactic_template() == SUCCESS)
         phase = 99;
       break;
 
@@ -190,42 +162,45 @@ int main(int argc, char **argv)
     {
       left_motor->setVelocity(0);
       right_motor->setVelocity(0);
-      std::cout << " " << std::endl;
       std::cout << "controller finished successfully " << std::endl;
       std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
-      std::cout << "time = " << my_robot->getTime() << std::endl;
-      sleep(10);
+      // sleep(10);
       break;
     }
     // END_MAIN
 
     // PLOT
     // plt_cnt++;
-    if (!(plt_cnt %= 64))
-    {
-      x_plt.push_back(robot_obj.get_position().x);
-      y_plt.push_back(robot_obj.get_position().y);
+    // if (!(plt_cnt %= 64))
+    // {
+    //   x_plt.push_back(robot_obj.get_position().x);
+    //   y_plt.push_back(robot_obj.get_position().y);
 
-      plt::clf();
-      // sim_time_vec.push_back(sim_time);
-      // v_vec.push_back(robot_obj.get_vel());
-      // w_vec.push_back(robot_obj.get_ang_vel());
-      // plt::plot(sim_time_vec, v_vec, {{"color", "blue"}, {"linewidth", "1"}});
-      // plt::plot(sim_time_vec, w_vec, {{"color", "red"}, {"linewidth", "1"}});
-      plt::xlim(-1500,1500);
-      plt::ylim(-1000,1000);
-      // plt::subplot(1,2,1);
-      plt::plot(x_plt, y_plt, {{"color", "black"}, {"linewidth", "0.5"}});
-      // plt::subplot(1,2,2);
-      plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 64);
-      plt::pause(0.001);
-      plt::show();
-    }
+    //   plt::clf();
+    //   // sim_time_vec.push_back(sim_time);
+    //   // v_vec.push_back(robot_obj.get_vel());
+    //   // w_vec.push_back(robot_obj.get_ang_vel());
+    //   // plt::plot(sim_time_vec, v_vec, {{"color", "blue"}, {"linewidth", "1"}});
+    //   // plt::plot(sim_time_vec, w_vec, {{"color", "red"}, {"linewidth", "1"}});
+    //   plt::xlim(-1500,1500);
+    //   plt::ylim(-1000,1000);
+    //   // plt::subplot(1,2,1);
+    //   plt::plot(x_plt, y_plt, {{"color", "black"}, {"linewidth", "0.5"}});
+    //   // plt::subplot(1,2,2);
+    //   plt::scatter(std::vector<double>{robot_obj.get_position().x},std::vector<double>{robot_obj.get_position().y}, 64);
+    //   plt::pause(0.001);
+    //   plt::show();
+    // }
     // END_PLOT
   };
 
   delete my_robot;
   return 0;
+}
+
+double get_time()
+{
+  return my_robot->getTime();
 }
 
 MyRobot get_robot()
@@ -306,4 +281,22 @@ double get_max_ang_vel()
 coord get_obstacle()
 {
   return obstacle;
+}
+
+uint8_t delay_nb_2 (uint32_t *start_time, uint32_t delay_ms)
+{
+  *start_time = uint_min (*start_time, get_time ()*1000);
+
+  if (get_time ()*1000 <= *start_time + delay_ms)
+	  return 0;
+  *start_time = 0xffffffff;
+  return 1;
+}
+
+uint32_t
+uint_min (uint32_t a, uint32_t b)
+{
+  if (a < b)
+	  return a;
+  return b;
 }

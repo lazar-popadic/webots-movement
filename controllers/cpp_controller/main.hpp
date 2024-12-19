@@ -10,6 +10,7 @@
 #include "pid.hpp"
 #include <vector>
 #include <cstdlib>
+#include <cstdint>
 
 #define VEL_LIMIT 0.001
 #define ANG_VEL_LIMIT 0.012
@@ -19,8 +20,8 @@
 #define OFFS_ROBOT 400
 #define OFFS_DESIRED 520
 
-#define FORW 1
-#define BACW -1
+#define FORWARD 1
+#define BACKWARD -1
 
 #define MAX_VEL 3.2
 #define MAX_ANG_VEL 36.0
@@ -81,6 +82,9 @@ void normalize_angle(double *angle);
 double abs_max(double a, double b);
 void scale_vel_ref(double *ref_1, double *ref_2, double limit);
 int sign(double signal);
+double get_time();
+uint8_t delay_nb_2 (uint32_t *start_time, uint32_t delay_ms);
+uint32_t uint_min (uint32_t a, uint32_t b);
 
 target create_target(double x, double y, double phi);
 
@@ -91,13 +95,8 @@ MyRobot get_robot();
 void follow_curve();
 void set_curve_ptr(curve* ptr);
 curve* get_curve_ptr();
-void move_on_path(double x, double y, double phi, int dir, bool cont, double cruising_vel);
 
 void move();
-void move_to_xy(double x, double y, int dir, double cruising_vel, double max_ang_vel);
-void rot_to_angle(double phi, double max_ang_vel);
-void move_on_dir(double distance, int dir, double cruising_vel);
-void rot_to_xy(double x, double y, int dir, double max_ang_vel);
 bool get_movement_status();
 void movement_finished();
 void movement_started();
@@ -126,8 +125,12 @@ coord get_obstacle();
 double abs_max(double a, double b);
 double abs_min(double a, double b);
 
-status move_on_path_wrapper(double x, double y, double phi, int dir, bool cont, double cruising_vel);
-status move_to_xy_wrapper(double x, double y, int dir, double cruising_vel, double max_ang_vel);
-status rot_to_angle_wrapper(double phi, double max_ang_vel);
+status move_on_path(double x, double y, double phi, int dir, bool cont, double cruising_vel);
+status move_to_xy(double x, double y, int dir, double cruising_vel, double max_ang_vel);
+status rot_to_angle(double phi, double max_ang_vel);
+status rot_to_xy(double x, double y, int dir, double max_ang_vel);
+status move_on_dir(double distance, int dir, double cruising_vel);
+
+status tactic_template();
 
 #endif /* __MAIN_HPP */

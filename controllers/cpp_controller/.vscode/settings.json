@@ -70,6 +70,7 @@
         "source_location": "cpp",
         "ranges": "cpp",
         "shared_mutex": "cpp",
-        "main.hpp": "c"
+        "main.hpp": "c",
+        "math.h": "c"
     }
 }
