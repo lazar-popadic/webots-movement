@@ -54,96 +54,11 @@ double bezier_distance = 0;
 
 static void rotate();
 static void go_to_xy();
+static void follow_curve_lerp();
+static void pure_pursuit(uint8_t lookahead_pnt_num, uint8_t lookahead_pnt_num_2);
 
 task task_status;
 bool movement_status;
-
-void follow_curve()
-{
-    switch (phase)
-    {
-    case 0: // curve
-        task_status.finished = false;
-        task_status.success = false;
-        cur_error.x = get_curve_ptr()->equ_pts[curve_cnt].x - get_robot().get_position().x;
-        cur_error.y = get_curve_ptr()->equ_pts[curve_cnt].y - get_robot().get_position().y;
-        next_error.x = get_curve_ptr()->equ_pts[curve_cnt + 1].x - get_robot().get_position().x;
-        next_error.y = get_curve_ptr()->equ_pts[curve_cnt + 1].y - get_robot().get_position().y;
-
-        error_phi_prim_1 = atan2(cur_error.y, cur_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
-        error_phi_prim_2 = atan2(next_error.y, next_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
-        normalize_angle(&error_phi_prim_1);
-        normalize_angle(&error_phi_prim_2);
-
-        distance = get_curve_ptr()->dis - curve_cnt * POINT_DISTANCE;
-        distance *= get_dir();
-        cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
-        cur_dis_error_projected = cur_dis_error * cos(error_phi_prim_1 * M_PI / 180);
-
-        t = cur_dis_error_projected / POINT_DISTANCE;
-        saturation(&t, 1, 0);
-
-        error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
-        normalize_angle(&error_phi_prim);
-        vel_ref = calculate(&dist_loop, distance);
-        ang_vel_ref = calculate(&curve_ang_loop, error_phi_prim);
-
-        if (cur_dis_error_projected < 0)
-        {
-            curve_cnt++;
-            if (curve_cnt == get_curve_ptr()->num_equ_pts)
-            {
-                phase = 1;
-                curve_cnt = 0;
-            }
-        }
-        // if (cur_dis_error > POINT_DISTANCE * 1.2)
-        // {
-        //     vel_ref = 0;
-        //     ang_vel_ref = 0;
-        //     phase = 1;
-        //     curve_cnt = 0;
-        //     status.finished = true;
-        //     status.success = false;
-        // }
-        break;
-
-    case 1: // ending
-        cur_error.x = get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_robot().get_position().x;
-        cur_error.y = get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_robot().get_position().y;
-
-        error_phi_prim = atan2(cur_error.y, cur_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
-        normalize_angle(&error_phi_prim);
-        error_phi = atan2(get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y, get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
-        normalize_angle(&error_phi);
-
-        cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
-        cur_dis_error_projected = cur_dis_error * cos(error_phi_prim * M_PI / 180);
-        if (cont_move)
-            vel_ref = get_dir() * get_cruising_vel();
-        else
-            vel_ref = get_dir() * calculate(&dist_loop, cur_dis_error_projected);
-        cur_segment_len = sqrt((get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) + (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y));
-        t = cur_dis_error_projected / cur_segment_len;
-        saturation(&t, 1, 0);
-
-        error_phi_final = t * error_phi_prim + (1 - t) * error_phi;
-        ang_vel_ref = calculate(&curve_ang_loop, error_phi_final);
-
-        if (cur_dis_error_projected < 0)
-        {
-            task_status.finished = true;
-            task_status.success = true;
-            phase = 0;
-            set_reg_type(0);
-            movement_finished();
-
-            free(get_curve_ptr()->equ_pts);
-            free(get_curve_ptr());
-        }
-        break;
-    }
-}
 
 void move()
 {
@@ -156,7 +71,8 @@ void move()
         go_to_xy();
         break;
     case 2:
-        follow_curve();
+        // follow_curve_lerp();
+        pure_pursuit(8,4);
         break;
     }
 }
@@ -195,11 +111,11 @@ static void go_to_xy()
     case 1: // tran
         distance = get_dir() * sqrt(error_x * error_x + error_y * error_y);
         if (fabs(error_phi_prim) > 90)
-            vel_ref = -calculate(&dist_loop, distance* cos(error_phi_prim * M_PI / 180));
+            vel_ref = -calculate(&dist_loop, distance * cos(error_phi_prim * M_PI / 180));
         else
-        vel_ref = calculate(&dist_loop, distance* cos(error_phi_prim * M_PI / 180));
-            // vel_ref = calculate(&dist_loop, distance);
-        
+            vel_ref = calculate(&dist_loop, distance * cos(error_phi_prim * M_PI / 180));
+        // vel_ref = calculate(&dist_loop, distance);
+
         if (fabs(distance) > DISTANCE_LIMIT2)
             ang_vel_ref = calculate(&ang_loop, error_phi_prim);
         else
@@ -214,6 +130,134 @@ static void go_to_xy()
         }
         break;
     }
+}
+
+static void follow_curve_lerp()
+{
+    task_status.finished = false;
+    task_status.success = false;
+    cur_error.x = get_curve_ptr()->equ_pts[curve_cnt].x - get_robot().get_position().x;
+    cur_error.y = get_curve_ptr()->equ_pts[curve_cnt].y - get_robot().get_position().y;
+    error_phi_prim_1 = atan2(cur_error.y, cur_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+    normalize_angle(&error_phi_prim_1);
+    cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
+    cur_dis_error_projected = cur_dis_error * cos(error_phi_prim_1 * M_PI / 180);
+
+    if (curve_cnt < get_curve_ptr()->num_equ_pts) // ako nije poslednja
+    {
+        next_error.x = get_curve_ptr()->equ_pts[curve_cnt + 1].x - get_robot().get_position().x;
+        next_error.y = get_curve_ptr()->equ_pts[curve_cnt + 1].y - get_robot().get_position().y;
+        error_phi_prim_2 = atan2(next_error.y, next_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+        t = cur_dis_error_projected / POINT_DISTANCE;
+        vel_ref = get_dir() * get_cruising_vel();
+    }
+    else // ako jeste poslednja
+    {
+        error_phi_prim_2 = atan2(get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y, get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+        cur_segment_len = sqrt((get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) + (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y) * (get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y));
+        t = cur_dis_error_projected / cur_segment_len;
+        if (cont_move)
+            vel_ref = get_dir() * get_cruising_vel();
+        else
+            vel_ref = get_dir() * calculate(&dist_loop, cur_dis_error_projected);
+    }
+    normalize_angle(&error_phi_prim_2);
+    saturation(&t, 1, 0);
+    error_phi_prim = t * error_phi_prim_1 + (1 - t) * error_phi_prim_2;
+    normalize_angle(&error_phi_prim);
+
+    ang_vel_ref = calculate(&curve_ang_loop, error_phi_prim);
+
+    if (cur_dis_error_projected < 0)
+    {
+        curve_cnt++;
+        if (curve_cnt > get_curve_ptr()->num_equ_pts)
+        {
+            curve_cnt = 0;
+            task_status.finished = true;
+            task_status.success = true;
+            set_reg_type(0);
+            movement_finished();
+            free(get_curve_ptr()->equ_pts);
+            free(get_curve_ptr());
+        }
+    }
+    // if (cur_dis_error > POINT_DISTANCE * 1.2)
+    // {
+    //     vel_ref = 0;
+    //     ang_vel_ref = 0;
+    //     phase = 1;
+    //     curve_cnt = 0;
+    //     status.finished = true;
+    //     status.success = false;
+    // }
+}
+
+static void pure_pursuit(uint8_t lookahead_pnt_num, uint8_t lookahead_pnt_num_2)
+{
+    task_status.finished = false;
+    task_status.success = false;
+    cur_error.x = get_curve_ptr()->equ_pts[curve_cnt].x - get_robot().get_position().x;
+    cur_error.y = get_curve_ptr()->equ_pts[curve_cnt].y - get_robot().get_position().y;
+    error_phi_prim_1 = atan2(cur_error.y, cur_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+    normalize_angle(&error_phi_prim_1);
+    cur_dis_error = sqrt(cur_error.x * cur_error.x + cur_error.y * cur_error.y);
+    cur_dis_error_projected = cur_dis_error * cos(error_phi_prim_1 * M_PI / 180);
+
+    if (curve_cnt < get_curve_ptr()->num_equ_pts - lookahead_pnt_num) // ako ima vise od lookahead_pnt_num preostalih tacaka, samo se okreci ka curve_cnt + lookahead_pnt_num
+    {
+        next_error.x = get_curve_ptr()->equ_pts[curve_cnt + lookahead_pnt_num].x - get_robot().get_position().x;
+        next_error.y = get_curve_ptr()->equ_pts[curve_cnt + lookahead_pnt_num].y - get_robot().get_position().y;
+        error_phi_prim = atan2(next_error.y, next_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+        vel_ref = get_dir() * get_cruising_vel();
+    }
+    else if (curve_cnt < get_curve_ptr()->num_equ_pts - lookahead_pnt_num_2) // ako ima manje od lookahead_pnt_num, a vise od lookahead_pnt_num_2 preostalih tacaka, a nije na poslednjoj, samo se okreci ka curve_cnt + lookahead_pnt_num_2
+    {
+        next_error.x = get_curve_ptr()->equ_pts[curve_cnt + lookahead_pnt_num_2].x - get_robot().get_position().x;
+        next_error.y = get_curve_ptr()->equ_pts[curve_cnt + lookahead_pnt_num_2].y - get_robot().get_position().y;
+        error_phi_prim = atan2(next_error.y, next_error.x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+        vel_ref = get_dir() * get_cruising_vel();
+    }
+    else if (curve_cnt < get_curve_ptr()->num_equ_pts) // ako ima manje od lookahead_pnt_num_2 preostalih tacaka, a nije na poslednjoj, samo se okreci ka ciljnoj orijentaciji
+    {
+        error_phi_prim = atan2(get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y, get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+        vel_ref = get_dir() * get_cruising_vel();
+    }
+    else // ako je poslednja tacka, okreci se ka ciljnoj orijentaciji
+    {
+        error_phi_prim = atan2(get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].y - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].y, get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts].x - get_curve_ptr()->equ_pts[get_curve_ptr()->num_equ_pts - 1].x) * 180 / M_PI + (get_dir() - 1) * 90 - get_robot().get_position().phi;
+        if (cont_move)
+            vel_ref = get_dir() * get_cruising_vel();
+        else
+            vel_ref = get_dir() * calculate(&dist_loop, cur_dis_error_projected);
+    }
+    normalize_angle(&error_phi_prim);
+
+    ang_vel_ref = calculate(&curve_ang_loop, error_phi_prim);
+
+    if (cur_dis_error_projected < 0)
+    {
+        curve_cnt++;
+        if (curve_cnt > get_curve_ptr()->num_equ_pts)
+        {
+            curve_cnt = 0;
+            task_status.finished = true;
+            task_status.success = true;
+            set_reg_type(0);
+            movement_finished();
+            free(get_curve_ptr()->equ_pts);
+            free(get_curve_ptr());
+        }
+    }
+    // if (cur_dis_error > POINT_DISTANCE * 1.2)
+    // {
+    //     vel_ref = 0;
+    //     ang_vel_ref = 0;
+    //     phase = 1;
+    //     curve_cnt = 0;
+    //     status.finished = true;
+    //     status.success = false;
+    // }
 }
 
 void set_reg_type(int8_t type)
@@ -312,7 +356,7 @@ double abs_min3(double a, double b, double c)
 double abs_min(double a, double b)
 {
     if (fabs(b) < fabs(a))
-        return  b;
+        return b;
     return a;
 }
 
@@ -344,31 +388,31 @@ double vel_s_curve(double *vel, double prev_vel, double vel_ref, double jerk_slo
 status move_on_path(double x, double y, double phi, int dir, bool cont, double cruising_vel)
 {
     status move_status = RUNNING;
-	if (!move_init)
-	{
-		move_init = true;
+    if (!move_init)
+    {
+        move_init = true;
         movement_started();
         set_reg_type(2);
         set_curve_ptr((curve *)malloc(sizeof(curve)));
         create_curve(get_curve_ptr(), create_target(x, y, phi), dir);
         // if (create_curve(get_curve_ptr(), create_target(x, y, phi), dir))
-            // return 1;    // TODO: ovde uradi testiranje drugih krivih
+        // return 1;    // TODO: ovde uradi testiranje drugih krivih
         set_dir(dir);
         cont_move = cont;
         set_cruising_vel(cruising_vel);
-	}
-	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
-	{
-		move_init = false;
-		move_status = SUCCESS;
-	}
-	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
-	{
-		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
-		move_status = FAILURE;
-	}
-	// else
-	// 	move_status = RUNNING;
+    }
+    if (get_movement_status() == false) // ovde treba da se poredi sa uspehom
+    {
+        move_init = false;
+        move_status = SUCCESS;
+    }
+    else if (get_movement_status() == true) // ovde treba da se poredi sa failom
+    {
+        // move_init = false;               // obavezno ovde reseuj move_init kada failuje
+        move_status = FAILURE;
+    }
+    // else
+    // 	move_status = RUNNING;
 
     return move_status;
 }
@@ -376,9 +420,9 @@ status move_on_path(double x, double y, double phi, int dir, bool cont, double c
 status move_to_xy(double x, double y, int dir, double cruising_vel, double max_ang_vel)
 {
     status move_status = RUNNING;
-	if (!move_init)
-	{
-		move_init = true;
+    if (!move_init)
+    {
+        move_init = true;
         movement_started();
         set_reg_type(1);
         set_desired_x(x);
@@ -386,19 +430,19 @@ status move_to_xy(double x, double y, int dir, double cruising_vel, double max_a
         set_dir(dir);
         set_cruising_vel(cruising_vel);
         set_max_ang_vel(max_ang_vel);
-	}
-	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
-	{
-		move_init = false;
-		move_status = SUCCESS;
-	}
-	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
-	{
-		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
-		move_status = FAILURE;
-	}
-	// else
-	// 	move_status = RUNNING;
+    }
+    if (get_movement_status() == false) // ovde treba da se poredi sa uspehom
+    {
+        move_init = false;
+        move_status = SUCCESS;
+    }
+    else if (get_movement_status() == true) // ovde treba da se poredi sa failom
+    {
+        // move_init = false;               // obavezno ovde reseuj move_init kada failuje
+        move_status = FAILURE;
+    }
+    // else
+    // 	move_status = RUNNING;
 
     return move_status;
 }
@@ -406,26 +450,26 @@ status move_to_xy(double x, double y, int dir, double cruising_vel, double max_a
 status rot_to_angle(double phi, double max_ang_vel)
 {
     status move_status = RUNNING;
-	if (!move_init)
-	{
-		move_init = true;
+    if (!move_init)
+    {
+        move_init = true;
         movement_started();
         set_reg_type(-1);
         set_desired_phi(phi);
         set_max_ang_vel(max_ang_vel);
-	}
-	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
-	{
-		move_init = false;
-		move_status = SUCCESS;
-	}
-	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
-	{
-		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
-		move_status = FAILURE;
-	}
-	// else
-	// 	move_status = RUNNING;
+    }
+    if (get_movement_status() == false) // ovde treba da se poredi sa uspehom
+    {
+        move_init = false;
+        move_status = SUCCESS;
+    }
+    else if (get_movement_status() == true) // ovde treba da se poredi sa failom
+    {
+        // move_init = false;               // obavezno ovde reseuj move_init kada failuje
+        move_status = FAILURE;
+    }
+    // else
+    // 	move_status = RUNNING;
 
     return move_status;
 }
@@ -433,27 +477,27 @@ status rot_to_angle(double phi, double max_ang_vel)
 status rot_to_xy(double x, double y, int dir, double max_ang_vel)
 {
     status move_status = RUNNING;
-	if (!move_init)
-	{
-		move_init = true;
+    if (!move_init)
+    {
+        move_init = true;
         movement_started();
         set_reg_type(-1);
         set_desired_phi(atan2(y - get_robot().get_position().y, x - get_robot().get_position().x) * 180 / M_PI + (dir - 1) * 90);
         set_dir(dir);
         set_max_ang_vel(max_ang_vel);
-	}
-	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
-	{
-		move_init = false;
-		move_status = SUCCESS;
-	}
-	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
-	{
-		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
-		move_status = FAILURE;
-	}
-	// else
-	// 	move_status = RUNNING;
+    }
+    if (get_movement_status() == false) // ovde treba da se poredi sa uspehom
+    {
+        move_init = false;
+        move_status = SUCCESS;
+    }
+    else if (get_movement_status() == true) // ovde treba da se poredi sa failom
+    {
+        // move_init = false;               // obavezno ovde reseuj move_init kada failuje
+        move_status = FAILURE;
+    }
+    // else
+    // 	move_status = RUNNING;
 
     return move_status;
 }
@@ -461,29 +505,28 @@ status rot_to_xy(double x, double y, int dir, double max_ang_vel)
 status move_on_dir(double distance, int dir, double cruising_vel)
 {
     status move_status = RUNNING;
-	if (!move_init)
-	{
-		move_init = true;
+    if (!move_init)
+    {
+        move_init = true;
         movement_started();
         set_reg_type(1);
         set_desired_x(get_robot().get_position().x + dir * distance * cos(get_robot().get_position().phi * M_PI / 180));
         set_desired_y(get_robot().get_position().y + dir * distance * sin(get_robot().get_position().phi * M_PI / 180));
         set_dir(dir);
         set_cruising_vel(cruising_vel);
-	}
-	if(get_movement_status() == false)    // ovde treba da se poredi sa uspehom
-	{
-		move_init = false;
-		move_status = SUCCESS;
-	}
-	else if(get_movement_status() == true)  // ovde treba da se poredi sa failom
-	{
-		// move_init = false;               // obavezno ovde reseuj move_init kada failuje
-		move_status = FAILURE;
-	}
-	// else
-	// 	move_status = RUNNING;
+    }
+    if (get_movement_status() == false) // ovde treba da se poredi sa uspehom
+    {
+        move_init = false;
+        move_status = SUCCESS;
+    }
+    else if (get_movement_status() == true) // ovde treba da se poredi sa failom
+    {
+        // move_init = false;               // obavezno ovde reseuj move_init kada failuje
+        move_status = FAILURE;
+    }
+    // else
+    // 	move_status = RUNNING;
 
     return move_status;
-    
 }

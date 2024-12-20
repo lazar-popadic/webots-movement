@@ -15,7 +15,7 @@
 #define VEL_LIMIT 0.001
 #define ANG_VEL_LIMIT 0.012
 #define BEZIER_RESOLUTION 1000
-#define POINT_DISTANCE 60
+#define POINT_DISTANCE 10
 
 #define OFFS_ROBOT 400
 #define OFFS_DESIRED 520
@@ -92,7 +92,6 @@ int create_curve(curve *curve_ptr, target desired_position, int dir);
 int cubic_bezier_pts(curve *curve_ptr, coord p0, coord p1, coord p2, coord p3);
 void equ_coords(curve *curve_ptr);
 MyRobot get_robot();
-void follow_curve();
 void set_curve_ptr(curve* ptr);
 curve* get_curve_ptr();
 

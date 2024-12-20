@@ -2,6 +2,7 @@
 controllers/cpp_controller/cpp_controller
 */.vs/*
 controllers/cpp_controller/.venv/*
+controllers/cpp_controller/build/*
 controllers/cpp_controller/build/release/cpp_controller
 controllers/cpp_controller/build/release/cpp_controller.d
 controllers/cpp_controller/build/release/cpp_controller.o

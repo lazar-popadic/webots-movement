@@ -6,10 +6,8 @@
 
 #include "main.hpp"
 #include <iostream>
-#include "matplotlibcpp.h"
-#include <unistd.h> // For sleep (POSIX only)
-
-namespace plt = matplotlibcpp;
+// #include "matplotlibcpp.h"
+// namespace plt = matplotlibcpp;
 
 // All the webots classes are defined in the "webots" namespace
 // using namespace webots;
@@ -52,9 +50,9 @@ double pid_ang_vel_left = 0;
 double cur_ang_vel_right = 0;
 double cur_ang_vel_left = 0;
 
-int8_t plt_cnt = 1;
-std::vector<double> v_vec, sim_time_vec, w_vec;
-double start_time = 0;
+// int8_t plt_cnt = 1;
+// std::vector<double> v_vec, sim_time_vec, w_vec;
+// double start_time = 0;
 
 coord obstacle = {0, 0};
 webots::Robot *my_robot = new webots::Robot();
@@ -79,8 +77,7 @@ int main(int argc, char **argv)
   init_pid(&vel_loop_2, 1.0, 1.0, 0.1, 16, 16);
   pid_init();
   
-  std::vector<double> x_plt, y_plt;
-
+  // std::vector<double> x_plt, y_plt;
   // // plt::plot({1,3,2,4});
   // // plt::show();
   // plt::ion();
@@ -164,7 +161,6 @@ int main(int argc, char **argv)
       right_motor->setVelocity(0);
       std::cout << "controller finished successfully " << std::endl;
       std::cout << "x  =  " << robot_obj.get_x() << "     y  =  " << robot_obj.get_y() << "     phi  =  " << robot_obj.get_phi() << std::endl;
-      // sleep(10);
       break;
     }
     // END_MAIN

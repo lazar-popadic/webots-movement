@@ -28,12 +28,7 @@ switch (phase)
       break;
 
     case 3:
-      if (move_on_path(0, 100, -90, FORWARD, true, MAX_VEL) == SUCCESS)
-        phase = 4;
-      break;
-
-    case 4:
-      if (move_on_dir(200, FORWARD, MAX_VEL) == SUCCESS)
+      if (move_on_path(0, -50, -90, FORWARD, true, MAX_VEL) == SUCCESS)
         phase = 5;
       break;
 
@@ -63,7 +58,7 @@ switch (phase)
       break;
 
     case 10:
-      if (move_to_xy(-1125, 600, FORWARD, MAX_VEL, MAX_ANG_VEL) == SUCCESS)
+      if (move_to_xy(-1125, 600, BACKWARD, MAX_VEL, MAX_ANG_VEL) == SUCCESS)
       {
         std::cout << " " << std::endl;
         std::cout << "tactic time = " << get_time() - tactic_start_time << std::endl;
